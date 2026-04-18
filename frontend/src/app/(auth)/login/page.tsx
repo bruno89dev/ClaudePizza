@@ -20,11 +20,18 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const user = await api.post<AuthUser>("/api/auth/login", { email, password });
+      const user = await api.post<AuthUser>("/api/auth/login", {
+        email,
+        password,
+      });
       saveAuth(user);
       // Set cookies for middleware
-      document.cookie = `token=${user.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
-      document.cookie = `role=${user.role}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      document.cookie = `token=${user.token}; path=/; max-age=${
+        60 * 60 * 24 * 7
+      }`;
+      document.cookie = `role=${user.role}; path=/; max-age=${
+        60 * 60 * 24 * 7
+      }`;
       router.push(user.role === "Admin" ? "/admin/flavors" : "/orders/new");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login.");
@@ -39,7 +46,8 @@ export default function LoginPage() {
       <div
         className="hidden lg:flex flex-1 flex-col justify-end p-12 relative"
         style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80')",
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundColor: "#111",
@@ -54,7 +62,9 @@ export default function LoginPage() {
               PIZZARIA
             </span>
           </div>
-          <p className="text-white/60 text-lg font-light">Sabor que conecta pessoas.</p>
+          <p className="text-white/60 text-lg font-light">
+            Sabor que conecta pessoas.
+          </p>
         </div>
       </div>
 
@@ -70,13 +80,19 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1">
-            <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">Entrar</h1>
-            <p className="text-[var(--muted-foreground)] text-sm">Faça login na sua conta</p>
+            <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">
+              Entrar
+            </h1>
+            <p className="text-[var(--muted-foreground)] text-sm">
+              Faça login na sua conta
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-mono text-[var(--foreground)]">Email</label>
+              <label className="text-sm font-mono text-[var(--foreground)]">
+                Email
+              </label>
               <Input
                 type="email"
                 placeholder="seu@email.com"
@@ -87,7 +103,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-mono text-[var(--foreground)]">Senha</label>
+              <label className="text-sm font-mono text-[var(--foreground)]">
+                Senha
+              </label>
               <Input
                 type="password"
                 placeholder="••••••••"
@@ -102,20 +120,31 @@ export default function LoginPage() {
               <p className="text-sm text-[var(--destructive)]">{error}</p>
             )}
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading}
+            >
               {loading ? "Entrando..." : "Entrar"}
             </Button>
 
-            <Button type="button" variant="ghost" className="w-full text-[var(--muted-foreground)]">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-[var(--muted-foreground)]"
+            >
               Esqueceu a senha?
             </Button>
           </form>
 
           <div className="flex items-center justify-center gap-2 text-sm">
-            <span className="text-[var(--muted-foreground)]">Não tem uma conta?</span>
+            <span className="text-[var(--muted-foreground)]">
+              Não tem uma conta?
+            </span>
             <button
               className="text-[var(--primary)] font-mono font-medium hover:underline cursor-pointer"
-              onClick={() => alert("Cadastro em breve!")}
+              onClick={() => router.push("/register")}
             >
               Criar conta
             </button>

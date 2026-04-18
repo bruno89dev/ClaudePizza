@@ -10,11 +10,11 @@ services:
         value: Production
       # Set these in the Render dashboard (Settings > Environment):
       - key: DATABASE_URL
-        sync: false   # paste your Neon connection string here
+        sync: false # paste your Neon connection string here
       - key: JWT_KEY
-        generateValue: true   # Render generates a random secure value
+        generateValue: true # Render generates a random secure value
       - key: ALLOWED_ORIGINS
-        sync: false   # paste your Vercel URL, e.g. https://claudepizza.vercel.app
+        sync: false # paste your Vercel URL, e.g. https://claudepizza.vercel.app
       - key: Jwt__Issuer
         value: ClaudePizza
       - key: Jwt__Audience
