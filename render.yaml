@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: claudepizza-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    rootDir: ./backend
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Set these in the Render dashboard (Settings > Environment):
+      - key: DATABASE_URL
+        sync: false   # paste your Neon connection string here
+      - key: JWT_KEY
+        generateValue: true   # Render generates a random secure value
+      - key: ALLOWED_ORIGINS
+        sync: false   # paste your Vercel URL, e.g. https://claudepizza.vercel.app
+      - key: Jwt__Issuer
+        value: ClaudePizza
+      - key: Jwt__Audience
+        value: ClaudePizzaApp
+      - key: Delivery__PizzariaLat
+        value: "-23.5505"
+      - key: Delivery__PizzariaLng
+        value: "-46.6333"
