@@ -39,11 +39,15 @@ export default function LoginPage() {
       <div
         className="hidden lg:flex flex-1 flex-col justify-end p-12 relative"
         style={{
-          backgroundImage: "linear-gradient(to bottom, #000000CC 0%, #1a0a0099 40%, #000000DD 100%)",
+          backgroundImage: "url('https://images.unsplash.com/photo-1513104890138-7c749659a591?w=1200&q=80')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           backgroundColor: "#111",
         }}
       >
-        <div className="flex flex-col gap-4">
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80" />
+        <div className="relative flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <Pizza size={48} className="text-[var(--primary)]" />
             <span className="font-mono font-bold text-4xl tracking-[0.2em] text-[var(--primary)]">
@@ -109,7 +113,10 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-center gap-2 text-sm">
             <span className="text-[var(--muted-foreground)]">Não tem uma conta?</span>
-            <button className="text-[var(--primary)] font-mono font-medium hover:underline">
+            <button
+              className="text-[var(--primary)] font-mono font-medium hover:underline cursor-pointer"
+              onClick={() => alert("Cadastro em breve!")}
+            >
               Criar conta
             </button>
           </div>
