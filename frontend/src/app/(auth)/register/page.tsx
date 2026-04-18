@@ -55,11 +55,11 @@ export default function RegisterPage() {
           <div className="flex items-center gap-3">
             <Pizza size={48} className="text-[var(--primary)]" />
             <span className="font-mono font-bold text-4xl tracking-[0.2em] text-[var(--primary)]">
-              PIZZARIA
+              BELLA ROMA
             </span>
           </div>
           <p className="text-white/60 text-lg font-light">
-            Sabor que conecta pessoas.
+            Bella Roma Pizzaria — Sabor que conecta pessoas.
           </p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export default function RegisterPage() {
           <div className="flex lg:hidden flex-col items-center gap-2">
             <Pizza size={40} className="text-[var(--primary)]" />
             <span className="font-mono font-bold text-2xl tracking-widest text-[var(--foreground)]">
-              PIZZARIA
+              BELLA ROMA
             </span>
           </div>
 

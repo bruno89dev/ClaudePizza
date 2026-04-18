@@ -9,8 +9,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pizzaria",
-  description: "Sistema de pedidos",
+  title: "Bella Roma Pizzaria",
+  description: "Sistema de pedidos — Bella Roma Pizzaria",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

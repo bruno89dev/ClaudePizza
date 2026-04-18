@@ -47,14 +47,14 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-5 py-6 border-b border-[var(--sidebar-border)]">
         <Pizza size={28} className="text-[var(--primary)]" />
         <span className="font-mono font-bold text-xl tracking-widest text-[var(--sidebar-foreground)]">
-          PIZZARIA
+          BELLA ROMA
         </span>
       </div>
 
       {/* User */}
       <div className="px-5 py-4 border-b border-[var(--sidebar-border)]">
         <p className="font-mono font-semibold text-[var(--sidebar-foreground)]">{user?.name}</p>
-        <p className="text-xs text-[var(--muted-foreground)]">{user?.role}</p>
+        <p className="text-xs text-[var(--muted-foreground)]">{user?.email}</p>
       </div>
 
       {/* Navigation */}

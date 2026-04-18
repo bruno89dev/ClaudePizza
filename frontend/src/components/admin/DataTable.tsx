@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -96,21 +96,23 @@ export function DataTable<T extends { id: number }>({
               </div>
             ))}
             {(onEdit || onDelete) && (
-              <div className="w-24 flex items-center justify-end gap-2">
+              <div className="w-24 flex items-center justify-end gap-3">
                 {onEdit && (
                   <button
                     onClick={() => onEdit(row)}
-                    className="text-xs font-mono text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                    title="Editar"
+                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
                   >
-                    Editar
+                    <Pencil size={15} />
                   </button>
                 )}
                 {onDelete && (
                   <button
                     onClick={() => onDelete(row)}
-                    className="text-xs font-mono text-[var(--destructive)] hover:opacity-80 transition-opacity"
+                    title="Excluir"
+                    className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer"
                   >
-                    Excluir
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
