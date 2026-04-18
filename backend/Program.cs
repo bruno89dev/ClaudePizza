@@ -132,6 +132,43 @@ using (var scope = app.Services.CreateScope())
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
     }
+
+    // Seed admin user
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    const string adminEmail = "admin@pizzaria.com";
+    if (await userManager.FindByEmailAsync(adminEmail) is null)
+    {
+        var admin = new AppUser { Name = "Admin", Email = adminEmail, UserName = adminEmail, Role = UserRoles.Admin };
+        await userManager.CreateAsync(admin, "Admin@123");
+        await userManager.AddToRoleAsync(admin, UserRoles.Admin);
+    }
+
+    // Seed flavors
+    if (!db.Flavors.Any())
+    {
+        db.Flavors.AddRange(
+            new Flavor { Name = "Margherita", Description = "Molho de tomate, mussarela e manjericão", BasePrice = 39.90m },
+            new Flavor { Name = "Calabresa", Description = "Molho de tomate, mussarela e calabresa fatiada", BasePrice = 42.90m },
+            new Flavor { Name = "Frango com Catupiry", Description = "Molho de tomate, frango desfiado e catupiry", BasePrice = 44.90m },
+            new Flavor { Name = "Portuguesa", Description = "Molho de tomate, presunto, ovos, cebola e azeitona", BasePrice = 44.90m },
+            new Flavor { Name = "Quatro Queijos", Description = "Mussarela, provolone, parmesão e catupiry", BasePrice = 46.90m },
+            new Flavor { Name = "Pepperoni", Description = "Molho de tomate, mussarela e pepperoni", BasePrice = 47.90m }
+        );
+        await db.SaveChangesAsync();
+    }
+
+    // Seed products
+    if (!db.Products.Any())
+    {
+        db.Products.AddRange(
+            new Product { Name = "Coca-Cola 2L", Description = "Refrigerante gelado", Price = 12.00m, Category = "Bebida" },
+            new Product { Name = "Suco de Laranja 500ml", Description = "Suco natural", Price = 10.00m, Category = "Bebida" },
+            new Product { Name = "Água Mineral 500ml", Description = "Sem gás", Price = 5.00m, Category = "Bebida" },
+            new Product { Name = "Bordão de Alho", Description = "Porção de pão de alho", Price = 14.90m, Category = "Entrada" },
+            new Product { Name = "Batata Frita", Description = "Porção crocante com cheddar", Price = 22.90m, Category = "Entrada" }
+        );
+        await db.SaveChangesAsync();
+    }
 }
 
 // Swagger available in all environments (portfolio project)
