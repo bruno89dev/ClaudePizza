@@ -151,6 +151,7 @@ static string ConvertPostgresUrl(string url)
 {
     var uri = new Uri(url);
     var userInfo = uri.UserInfo.Split(':');
-    var db = uri.AbsolutePath.TrimStart('/');
-    return $"Host={uri.Host};Port={uri.Port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var db = uri.AbsolutePath.TrimStart('/').Split('?')[0];
+    var port = uri.Port == -1 ? 5432 : uri.Port;
+    return $"Host={uri.Host};Port={port};Database={db};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
