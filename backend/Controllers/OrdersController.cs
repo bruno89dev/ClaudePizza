@@ -120,8 +120,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
     {
         try
         {
-        var fromDate = from.Date;
-        var toDate = to.Date.AddDays(1);
+        var fromDate = DateTime.SpecifyKind(from.Date, DateTimeKind.Utc);
+        var toDate   = DateTime.SpecifyKind(to.Date.AddDays(1), DateTimeKind.Utc);
 
         if ((toDate - fromDate).TotalDays > 91)
             return BadRequest("Intervalo máximo de 90 dias.");
