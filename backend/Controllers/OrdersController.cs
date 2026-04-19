@@ -64,6 +64,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             State        = req.State,
             ZipCode      = req.ZipCode,
             DeliveryFee  = req.DeliveryFee,
+            PaymentMethod = req.PaymentMethod,
+            ChangeFor     = req.ChangeFor,
             Items = req.Items.Select(i => new OrderItem
             {
                 FlavorId  = i.FlavorId,
@@ -197,6 +199,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
                 var dow = DateTime.UtcNow.DayOfWeek;
                 var baseMinutes = dow is DayOfWeek.Friday or DayOfWeek.Saturday or DayOfWeek.Sunday
                     ? 60 : 30;
+                if (o.DeliveryType == DeliveryType.Pickup)
+                    baseMinutes = Math.Max(0, baseMinutes - 20);
                 estimatedDeliveryAt = o.CreatedAt.AddMinutes(baseMinutes + position * 15);
             }
         }
@@ -210,6 +214,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
                 i.Id, i.FlavorId, i.Flavor?.Name ?? "",
                 i.Size, i.Crust, i.Extras, i.Quantity, i.UnitPrice
             )).ToList(),
-            estimatedDeliveryAt);
+            estimatedDeliveryAt,
+            o.PaymentMethod,
+            o.ChangeFor);
     }
 }

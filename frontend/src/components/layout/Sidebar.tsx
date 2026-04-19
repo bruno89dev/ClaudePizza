@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UtensilsCrossed, ReceiptText, ShoppingCart, Settings, LogOut, Pizza, BarChart3, Tag, Package, X } from "lucide-react";
+import { UtensilsCrossed, ReceiptText, ShoppingCart, LogOut, Pizza, BarChart3, Tag, Package, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuth, getAuth } from "@/lib/auth";
 
@@ -16,7 +16,6 @@ const customerNav: NavItem[] = [
   { label: "Novo Pedido", href: "/orders/new", icon: <UtensilsCrossed size={18} /> },
   { label: "Meus Pedidos", href: "/orders", icon: <ReceiptText size={18} /> },
   { label: "Carrinho", href: "/checkout", icon: <ShoppingCart size={18} /> },
-  { label: "Configurações", href: "/settings", icon: <Settings size={18} /> },
 ];
 
 const adminNav: NavItem[] = [

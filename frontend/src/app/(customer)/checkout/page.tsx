@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { api } from "@/lib/api";
-import { getAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,9 +28,32 @@ interface AddressData {
   fee: number;
 }
 
+type PaymentMethod = "Dinheiro" | "Pix" | "Débito" | "Crédito";
+
+const PAYMENT_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: "Dinheiro", label: "Dinheiro" },
+  { value: "Pix", label: "Pix" },
+  { value: "Débito", label: "Cartão de Débito" },
+  { value: "Crédito", label: "Cartão de Crédito" },
+];
+
+function formatBRL(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const cents = parseInt(digits, 10);
+  return "R$ " + (cents / 100).toFixed(2).replace(".", ",");
+}
+
+function parseBRL(formatted: string): number {
+  const digits = formatted.replace(/\D/g, "");
+  if (!digits) return 0;
+  return parseInt(digits, 10) / 100;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [deliveryType, setDeliveryType] = useState<"Pickup" | "Delivery">("Pickup");
   const [zipCode, setZipCode] = useState("");
   const [address, setAddress] = useState<AddressData | null>(null);
@@ -38,11 +61,16 @@ export default function CheckoutPage() {
   const [complement, setComplement] = useState("");
   const [loadingCep, setLoadingCep] = useState(false);
   const [cepError, setCepError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [needsChange, setNeedsChange] = useState<boolean | null>(null);
+  const [changeForRaw, setChangeForRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     const raw = localStorage.getItem("cart");
     if (raw) setCart(JSON.parse(raw));
+    setLoaded(true);
   }, []);
 
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
@@ -73,6 +101,11 @@ export default function CheckoutPage() {
       setCepError("Informe e consulte o CEP antes de confirmar.");
       return;
     }
+    if (!paymentMethod) {
+      setPaymentError("Selecione uma forma de pagamento.");
+      return;
+    }
+    setPaymentError("");
     setSubmitting(true);
     try {
       await api.post("/api/orders", {
@@ -86,6 +119,8 @@ export default function CheckoutPage() {
         zipCode: address?.zipCode,
         deliveryFee,
         items: cart,
+        paymentMethod,
+        changeFor: paymentMethod === "Dinheiro" && needsChange ? parseBRL(changeForRaw) : null,
       });
       localStorage.removeItem("cart");
       router.push("/orders");
@@ -94,6 +129,35 @@ export default function CheckoutPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Empty cart state
+  if (loaded && cart.length === 0) {
+    return (
+      <div className="flex flex-col h-full">
+        <header className="flex items-center h-16 lg:h-20 px-4 lg:px-8 border-b border-[var(--border)]">
+          <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Carrinho</h1>
+        </header>
+        <div className="flex flex-col flex-1 items-center justify-center gap-6 p-8 text-center">
+          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-[var(--muted)]">
+            <ShoppingCart size={36} className="text-[var(--muted-foreground)]" />
+          </div>
+          <div className="space-y-2">
+            <p className="font-mono font-bold text-xl text-[var(--foreground)]">Seu carrinho está vazio</p>
+            <p className="text-[var(--muted-foreground)] max-w-xs">
+              Parece que você ainda não escolheu nenhuma pizza. Que tal montar a sua agora?
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/orders/new")}
+            className="flex items-center gap-2 px-6 py-3 bg-[var(--primary)] text-[var(--primary-foreground)] font-mono font-semibold rounded-[var(--radius-pill)] hover:bg-[var(--primary)]/90 transition-colors cursor-pointer"
+          >
+            <UtensilsCrossed size={18} />
+            Montar minha pizza agora 🍕
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -113,7 +177,7 @@ export default function CheckoutPage() {
                 <button
                   key={type}
                   onClick={() => setDeliveryType(type)}
-                  className={`flex-1 py-3 rounded-[var(--radius-m)] border font-mono text-sm font-medium transition-colors ${
+                  className={`flex-1 py-3 rounded-[var(--radius-m)] border font-mono text-sm font-medium transition-colors cursor-pointer ${
                     deliveryType === type
                       ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
                       : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
@@ -165,6 +229,85 @@ export default function CheckoutPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Pagamento */}
+          <Card>
+            <CardHeader><CardTitle>Forma de Pagamento</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {PAYMENT_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-[var(--radius-m)] border cursor-pointer transition-colors ${
+                      paymentMethod === opt.value
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
+                        : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={opt.value}
+                      checked={paymentMethod === opt.value}
+                      onChange={() => {
+                        setPaymentMethod(opt.value);
+                        setNeedsChange(null);
+                        setChangeForRaw("");
+                        setPaymentError("");
+                      }}
+                      className="accent-[var(--primary)] w-4 h-4 shrink-0"
+                    />
+                    <span className={`font-mono text-sm ${paymentMethod === opt.value ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`}>
+                      {opt.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Troco — apenas para Dinheiro */}
+              {paymentMethod === "Dinheiro" && (
+                <div className="space-y-3 pt-1">
+                  <p className="text-sm font-mono text-[var(--foreground)]">Precisa de troco?</p>
+                  <div className="flex gap-3">
+                    {([true, false] as const).map((val) => (
+                      <label
+                        key={String(val)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-[var(--radius-m)] border cursor-pointer transition-colors ${
+                          needsChange === val
+                            ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                            : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="troco"
+                          checked={needsChange === val}
+                          onChange={() => { setNeedsChange(val); setChangeForRaw(""); }}
+                          className="accent-[var(--primary)] w-4 h-4"
+                        />
+                        <span className="font-mono text-sm">{val ? "Sim" : "Não"}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {needsChange === true && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-mono text-[var(--muted-foreground)]">Para quanto?</label>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="R$ 0,00"
+                        value={changeForRaw}
+                        onChange={(e) => setChangeForRaw(formatBRL(e.target.value))}
+                        className="max-w-[180px]"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {paymentError && <p className="text-sm text-[var(--destructive)]">{paymentError}</p>}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column — order summary */}
@@ -172,46 +315,40 @@ export default function CheckoutPage() {
           <Card className="sticky top-0">
             <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {cart.length === 0 ? (
-                <p className="text-sm text-[var(--muted-foreground)]">Seu carrinho está vazio.</p>
-              ) : (
-                <>
-                  {cart.map((item, i) => (
-                    <div key={i} className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-mono text-sm">{item.flavorName}</p>
-                        <p className="text-xs text-[var(--muted-foreground)]">
-                          {item.size} {item.crust ? `· ${item.crust}` : ""} · {item.quantity}x
-                        </p>
-                      </div>
-                      <span className="font-mono text-sm whitespace-nowrap">
-                        R$ {(item.unitPrice * item.quantity).toFixed(2).replace(".", ",")}
-                      </span>
-                    </div>
-                  ))}
-
-                  <div className="border-t border-[var(--border)] pt-3 space-y-1">
-                    <div className="flex justify-between text-sm text-[var(--muted-foreground)]">
-                      <span>Subtotal</span>
-                      <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
-                    </div>
-                    {deliveryType === "Delivery" && (
-                      <div className="flex justify-between text-sm text-[var(--muted-foreground)]">
-                        <span>Taxa de entrega</span>
-                        <span>R$ {deliveryFee.toFixed(2).replace(".", ",")}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-mono font-bold text-lg pt-1">
-                      <span>Total</span>
-                      <span className="text-[var(--primary)]">R$ {total.toFixed(2).replace(".", ",")}</span>
-                    </div>
+              {cart.map((item, i) => (
+                <div key={i} className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-mono text-sm">{item.flavorName}</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      {item.size} {item.crust ? `· ${item.crust}` : ""} · {item.quantity}x
+                    </p>
                   </div>
+                  <span className="font-mono text-sm whitespace-nowrap">
+                    R$ {(item.unitPrice * item.quantity).toFixed(2).replace(".", ",")}
+                  </span>
+                </div>
+              ))}
 
-                  <Button className="w-full" size="lg" onClick={handleOrder} disabled={submitting}>
-                    {submitting ? "Confirmando..." : "Confirmar Pedido"}
-                  </Button>
-                </>
-              )}
+              <div className="border-t border-[var(--border)] pt-3 space-y-1">
+                <div className="flex justify-between text-sm text-[var(--muted-foreground)]">
+                  <span>Subtotal</span>
+                  <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
+                </div>
+                {deliveryType === "Delivery" && (
+                  <div className="flex justify-between text-sm text-[var(--muted-foreground)]">
+                    <span>Taxa de entrega</span>
+                    <span>R$ {deliveryFee.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-mono font-bold text-lg pt-1">
+                  <span>Total</span>
+                  <span className="text-[var(--primary)]">R$ {total.toFixed(2).replace(".", ",")}</span>
+                </div>
+              </div>
+
+              <Button className="w-full" size="lg" onClick={handleOrder} disabled={submitting}>
+                {submitting ? "Confirmando..." : "Confirmar Pedido"}
+              </Button>
             </CardContent>
           </Card>
         </div>

@@ -20,7 +20,9 @@ public record CreateOrderRequest(
     string? State,
     string? ZipCode,
     decimal DeliveryFee,
-    List<OrderItemRequest> Items);
+    List<OrderItemRequest> Items,
+    string? PaymentMethod,
+    decimal? ChangeFor);
 
 public record UpdateOrderStatusRequest(OrderStatus Status);
 
@@ -51,4 +53,6 @@ public record OrderResponse(
     decimal TotalAmount,
     DateTime CreatedAt,
     List<OrderItemResponse> Items,
-    DateTime? EstimatedDeliveryAt);
+    DateTime? EstimatedDeliveryAt,
+    string? PaymentMethod,
+    decimal? ChangeFor);

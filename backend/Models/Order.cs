@@ -24,6 +24,11 @@ public class Order
 
     public OrderStatus Status { get; set; } = OrderStatus.Preparando;
 
+    public string? PaymentMethod { get; set; }
+
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal? ChangeFor { get; set; }
+
     [Column(TypeName = "decimal(10,2)")]
     public decimal TotalAmount { get; set; }
 
