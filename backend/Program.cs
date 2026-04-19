@@ -76,16 +76,12 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddHttpClient<DeliveryService>();
 
-// CORS — reads comma-separated origins from env var or config
-var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")
-    ?? builder.Configuration["AllowedOrigins"]
-    ?? "http://localhost:3000")
-    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
+// CORS — SetIsOriginAllowed permite qualquer origem mantendo AllowCredentials
+// (necessário para SignalR e para que headers apareçam mesmo em respostas de erro)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
@@ -178,8 +174,13 @@ using (var scope = app.Services.CreateScope())
     if (wrongCat.Any()) await db.SaveChangesAsync();
 }
 
-// CORS deve ser o primeiro middleware para que os headers sejam enviados
-// em TODAS as respostas, inclusive erros 4xx/5xx
+app.UseExceptionHandler(err => err.Run(async ctx =>
+{
+    ctx.Response.StatusCode = 500;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsync("{\"error\":\"Internal server error\"}");
+}));
+
 app.UseCors("Frontend");
 
 // Swagger available in all environments (portfolio project)

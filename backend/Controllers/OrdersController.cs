@@ -118,6 +118,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats([FromQuery] DateTime from, [FromQuery] DateTime to)
     {
+        try
+        {
         var fromDate = from.Date;
         var toDate = to.Date.AddDays(1);
 
@@ -176,6 +178,11 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         return Ok(new OrderStatsResponse(
             dailyStats, statusBreakdown, topFlavors, sizeBreakdown, deliveryTypeBreakdown,
             totalRevenue, totalOrders, (decimal)averageTicket, cancellationRate, averageRating));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     [HttpPatch("{id:int}/rate")]
