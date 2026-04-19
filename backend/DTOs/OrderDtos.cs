@@ -3,7 +3,8 @@ using backend.Models;
 namespace backend.DTOs;
 
 public record OrderItemRequest(
-    int FlavorId,
+    int? FlavorId,
+    string? ItemName,
     string Size,
     string? Crust,
     string? Extras,
@@ -25,6 +26,8 @@ public record CreateOrderRequest(
     decimal? ChangeFor);
 
 public record UpdateOrderStatusRequest(OrderStatus Status);
+
+public record RateOrderRequest(int Rating);
 
 public record OrderItemResponse(
     int Id,
@@ -55,4 +58,5 @@ public record OrderResponse(
     List<OrderItemResponse> Items,
     DateTime? EstimatedDeliveryAt,
     string? PaymentMethod,
-    decimal? ChangeFor);
+    decimal? ChangeFor,
+    int? Rating);

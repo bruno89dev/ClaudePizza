@@ -8,12 +8,14 @@ public class OrderItem
     public int OrderId { get; set; }
     public Order Order { get; set; } = null!;
 
-    public int FlavorId { get; set; }
-    public Flavor Flavor { get; set; } = null!;
+    public int? FlavorId { get; set; }
+    public Flavor? Flavor { get; set; }
 
-    public string Size { get; set; } = string.Empty;      // Pequena, Média, Grande
-    public string? Crust { get; set; }                    // Catupiry, Cheddar, etc.
-    public string? Extras { get; set; }                   // JSON array: ["Bacon", "Cebola"]
+    public string? ItemName { get; set; }   // usado para entradas/bebidas (FlavorId == null)
+
+    public string Size { get; set; } = string.Empty;
+    public string? Crust { get; set; }
+    public string? Extras { get; set; }
 
     public int Quantity { get; set; } = 1;
 

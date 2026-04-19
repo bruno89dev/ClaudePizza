@@ -11,14 +11,16 @@ namespace backend.Controllers;
 [Route("api/promotions")]
 public class PromotionsController(AppDbContext db) : ControllerBase
 {
+    private static PromotionResponse Map(Promotion p) => new(
+        p.Id, p.Name, p.Description, p.DiscountType, p.DiscountValue,
+        p.IsIndeterminate, p.ValidFrom, p.ValidTo,
+        p.WeekDays, p.ApplicableCategory, p.IsActive, p.CreatedAt);
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var promos = await db.Promotions
-            .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new PromotionResponse(p.Id, p.Name, p.Description, p.DiscountType, p.DiscountValue, p.ValidFrom, p.ValidTo, p.IsActive, p.CreatedAt))
-            .ToListAsync();
-        return Ok(promos);
+        var promos = await db.Promotions.OrderByDescending(p => p.CreatedAt).ToListAsync();
+        return Ok(promos.Select(Map));
     }
 
     [HttpGet("{id}")]
@@ -26,27 +28,17 @@ public class PromotionsController(AppDbContext db) : ControllerBase
     {
         var p = await db.Promotions.FindAsync(id);
         if (p is null) return NotFound();
-        return Ok(new PromotionResponse(p.Id, p.Name, p.Description, p.DiscountType, p.DiscountValue, p.ValidFrom, p.ValidTo, p.IsActive, p.CreatedAt));
+        return Ok(Map(p));
     }
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(PromotionRequest req)
     {
-        var promo = new Promotion
-        {
-            Name = req.Name,
-            Description = req.Description,
-            DiscountType = req.DiscountType,
-            DiscountValue = req.DiscountValue,
-            ValidFrom = req.ValidFrom,
-            ValidTo = req.ValidTo,
-            IsActive = req.IsActive
-        };
+        var promo = Apply(new Promotion(), req);
         db.Promotions.Add(promo);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = promo.Id },
-            new PromotionResponse(promo.Id, promo.Name, promo.Description, promo.DiscountType, promo.DiscountValue, promo.ValidFrom, promo.ValidTo, promo.IsActive, promo.CreatedAt));
+        return CreatedAtAction(nameof(GetById), new { id = promo.Id }, Map(promo));
     }
 
     [Authorize(Roles = "Admin")]
@@ -55,17 +47,9 @@ public class PromotionsController(AppDbContext db) : ControllerBase
     {
         var promo = await db.Promotions.FindAsync(id);
         if (promo is null) return NotFound();
-
-        promo.Name = req.Name;
-        promo.Description = req.Description;
-        promo.DiscountType = req.DiscountType;
-        promo.DiscountValue = req.DiscountValue;
-        promo.ValidFrom = req.ValidFrom;
-        promo.ValidTo = req.ValidTo;
-        promo.IsActive = req.IsActive;
-
+        Apply(promo, req);
         await db.SaveChangesAsync();
-        return Ok(new PromotionResponse(promo.Id, promo.Name, promo.Description, promo.DiscountType, promo.DiscountValue, promo.ValidFrom, promo.ValidTo, promo.IsActive, promo.CreatedAt));
+        return Ok(Map(promo));
     }
 
     [Authorize(Roles = "Admin")]
@@ -77,5 +61,20 @@ public class PromotionsController(AppDbContext db) : ControllerBase
         db.Promotions.Remove(promo);
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private static Promotion Apply(Promotion p, PromotionRequest req)
+    {
+        p.Name                = req.Name;
+        p.Description         = req.Description;
+        p.DiscountType        = req.DiscountType;
+        p.DiscountValue       = req.DiscountValue;
+        p.IsIndeterminate     = req.IsIndeterminate;
+        p.ValidFrom           = req.IsIndeterminate ? null : req.ValidFrom;
+        p.ValidTo             = req.IsIndeterminate ? null : req.ValidTo;
+        p.WeekDays            = req.WeekDays;
+        p.ApplicableCategory  = req.ApplicableCategory;
+        p.IsActive            = req.IsActive;
+        return p;
     }
 }

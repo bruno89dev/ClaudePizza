@@ -32,6 +32,8 @@ public class Order
     [Column(TypeName = "decimal(10,2)")]
     public decimal TotalAmount { get; set; }
 
+    public int? Rating { get; set; }   // 1-5 estrelas, preenchido pelo cliente após entrega
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

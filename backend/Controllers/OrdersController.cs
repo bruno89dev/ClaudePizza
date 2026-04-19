@@ -69,6 +69,7 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             Items = req.Items.Select(i => new OrderItem
             {
                 FlavorId  = i.FlavorId,
+                ItemName  = i.ItemName,
                 Size      = i.Size,
                 Crust     = i.Crust,
                 Extras    = i.Extras,
@@ -169,10 +170,29 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         var cancellationRate = totalOrders > 0
             ? (double)orders.Count(o => o.Status == OrderStatus.Cancelado) / totalOrders * 100
             : 0;
+        var ratedOrders = orders.Where(o => o.Rating.HasValue).ToList();
+        var averageRating = ratedOrders.Count > 0 ? ratedOrders.Average(o => (double)o.Rating!.Value) : 0.0;
 
         return Ok(new OrderStatsResponse(
             dailyStats, statusBreakdown, topFlavors, sizeBreakdown, deliveryTypeBreakdown,
-            totalRevenue, totalOrders, (decimal)averageTicket, cancellationRate));
+            totalRevenue, totalOrders, (decimal)averageTicket, cancellationRate, averageRating));
+    }
+
+    [HttpPatch("{id:int}/rate")]
+    public async Task<IActionResult> RateOrder(int id, RateOrderRequest req)
+    {
+        if (req.Rating < 1 || req.Rating > 5)
+            return BadRequest("A avaliação deve ser entre 1 e 5.");
+
+        var order = await db.Orders.FindAsync(id);
+        if (order is null) return NotFound();
+        if (!IsAdmin && order.UserId != CurrentUserId) return Forbid();
+        if (order.Status != OrderStatus.Entregue)
+            return BadRequest("Só é possível avaliar pedidos entregues.");
+
+        order.Rating = req.Rating;
+        await db.SaveChangesAsync();
+        return NoContent();
     }
 
     // Returns all active (non-delivered, non-cancelled) orders from today for queue calculation
@@ -211,11 +231,12 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             o.Street, o.Number, o.Complement, o.Neighborhood, o.City, o.State, o.ZipCode,
             o.DeliveryFee, o.Status, o.TotalAmount, o.CreatedAt,
             o.Items.Select(i => new OrderItemResponse(
-                i.Id, i.FlavorId, i.Flavor?.Name ?? "",
+                i.Id, i.FlavorId ?? 0, i.Flavor?.Name ?? i.ItemName ?? "",
                 i.Size, i.Crust, i.Extras, i.Quantity, i.UnitPrice
             )).ToList(),
             estimatedDeliveryAt,
             o.PaymentMethod,
-            o.ChangeFor);
+            o.ChangeFor,
+            o.Rating);
     }
 }

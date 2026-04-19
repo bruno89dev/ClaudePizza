@@ -57,3 +57,28 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Scrollbar temática fina */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* Ícone do calendário na cor primária */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(55%) sepia(80%) saturate(700%) hue-rotate(5deg) brightness(105%);
+  cursor: pointer;
+}
+
+/* Select com seta laranja */
+select.select-primary {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23FF8400' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}

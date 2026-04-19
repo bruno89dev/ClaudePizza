@@ -196,10 +196,10 @@ export default function AdminOrdersPage() {
                   </p>
                 )}
               </div>
-              <Badge variant="secondary" className="w-fit">
+              <Badge variant="secondary" className="w-fit text-xs">
                 {order.deliveryType === "Delivery" ? "Entrega" : "Retirada"}
               </Badge>
-              <Badge variant={STATUS_VARIANT[order.status]}>{order.status}</Badge>
+              <Badge variant={STATUS_VARIANT[order.status]} className="w-fit text-xs">{order.status}</Badge>
               <span className="font-mono text-sm">
                 R$ {order.totalAmount.toFixed(2).replace(".", ",")}
               </span>

@@ -15,4 +15,5 @@ public record OrderStatsResponse(
     decimal TotalRevenue,
     int TotalOrders,
     decimal AverageTicket,
-    double CancellationRate);
+    double CancellationRate,
+    double AverageRating);

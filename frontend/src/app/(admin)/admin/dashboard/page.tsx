@@ -24,6 +24,7 @@ interface Stats {
   totalOrders: number;
   averageTicket: number;
   cancellationRate: number;
+  averageRating: number;
 }
 
 const CHART_COLORS = ["#FF8400", "#3B82F6", "#22C55E", "#F59E0B", "#FF5C33", "#8B5CF6"];
@@ -158,26 +159,25 @@ export default function DashboardPage() {
       {stats && stats.totalOrders > 0 && (
         <div className="p-4 lg:p-8 space-y-6">
           {/* KPI row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
-              label="Pedidos"
-              value={String(stats.totalOrders)}
-              sub="no período"
-            />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <KpiCard label="Pedidos" value={String(stats.totalOrders)} sub="no período" />
             <KpiCard
               label="Faturamento"
               value={`R$ ${stats.totalRevenue.toFixed(2).replace(".", ",")}`}
               sub="pedidos não cancelados"
               color="text-[var(--primary)]"
             />
-            <KpiCard
-              label="Ticket médio"
-              value={`R$ ${stats.averageTicket.toFixed(2).replace(".", ",")}`}
-            />
+            <KpiCard label="Ticket médio" value={`R$ ${stats.averageTicket.toFixed(2).replace(".", ",")}`} />
             <KpiCard
               label="Cancelamentos"
               value={`${stats.cancellationRate.toFixed(1)}%`}
               color={stats.cancellationRate > 10 ? "text-[var(--destructive)]" : "text-[#4ade80]"}
+            />
+            <KpiCard
+              label="Avaliação média"
+              value={stats.averageRating > 0 ? `${"⭐".repeat(Math.round(stats.averageRating))} ${stats.averageRating.toFixed(1)}` : "—"}
+              sub="baseado nos pedidos entregues"
+              color="text-[var(--foreground)]"
             />
           </div>
 

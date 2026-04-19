@@ -7,8 +7,11 @@ public record PromotionRequest(
     string Description,
     DiscountType DiscountType,
     decimal DiscountValue,
-    DateTime ValidFrom,
-    DateTime ValidTo,
+    bool IsIndeterminate,
+    DateTime? ValidFrom,
+    DateTime? ValidTo,
+    string? WeekDays,
+    string? ApplicableCategory,
     bool IsActive = true);
 
 public record PromotionResponse(
@@ -17,7 +20,10 @@ public record PromotionResponse(
     string Description,
     DiscountType DiscountType,
     decimal DiscountValue,
-    DateTime ValidFrom,
-    DateTime ValidTo,
+    bool IsIndeterminate,
+    DateTime? ValidFrom,
+    DateTime? ValidTo,
+    string? WeekDays,
+    string? ApplicableCategory,
     bool IsActive,
     DateTime CreatedAt);
