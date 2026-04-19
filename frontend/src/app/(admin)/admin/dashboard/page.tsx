@@ -93,6 +93,8 @@ export default function DashboardPage() {
     try {
       const data = await api.get<Stats>(`/api/orders/stats?from=${f}&to=${t}`);
       setStats(data);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Erro ao carregar dados.");
     } finally {
       setLoading(false);
     }
@@ -147,7 +149,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {stats && (
+      {stats && stats.totalOrders === 0 && (
+        <div className="flex items-center justify-center flex-1 text-[var(--muted-foreground)] font-mono text-sm">
+          Nenhum pedido encontrado no período selecionado.
+        </div>
+      )}
+
+      {stats && stats.totalOrders > 0 && (
         <div className="p-4 lg:p-8 space-y-6">
           {/* KPI row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChefHat, PackageCheck, XCircle, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -35,12 +36,26 @@ const STATUS_VARIANT: Record<OrderStatus, "warning" | "success" | "secondary" | 
 };
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   return (
-    <div className="relative group inline-flex">
+    <div
+      className="inline-flex"
+      onMouseEnter={(e) => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setPos({ x: r.left + r.width / 2, y: r.top });
+      }}
+      onMouseLeave={() => setPos(null)}
+    >
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-mono bg-[var(--foreground)] text-[var(--background)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-        {text}
-      </div>
+      {pos && createPortal(
+        <div
+          style={{ position: "fixed", left: pos.x, top: pos.y - 8, transform: "translate(-50%, -100%)" }}
+          className="px-2 py-1 rounded text-xs font-mono bg-[var(--foreground)] text-[var(--background)] whitespace-nowrap pointer-events-none z-[9999]"
+        >
+          {text}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

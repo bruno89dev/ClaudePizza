@@ -38,7 +38,12 @@ function roundToNinety(value: number): number {
   return candidate >= value - 0.001 ? candidate : floored + 1.9;
 }
 
-const CRUSTS = ["Sem borda", "Catupiry", "Cheddar", "Chocolate"];
+const CRUSTS: { label: string; price: number }[] = [
+  { label: "Sem borda",  price: 0     },
+  { label: "Catupiry",   price: 12.90 },
+  { label: "Cheddar",    price: 13.90 },
+  { label: "Chocolate",  price: 10.90 },
+];
 
 const EXTRAS: { label: string; price: number }[] = [
   { label: "Bacon", price: 4.00 },
@@ -82,9 +87,10 @@ export default function NewOrderPage() {
   const extrasTotal = extras.reduce((sum, label) => {
     return sum + (EXTRAS.find((e) => e.label === label)?.price ?? 0);
   }, 0);
+  const crustPrice = CRUSTS.find((c) => c.label === crust)?.price ?? 0;
 
   const unitPrice = selectedFlavor
-    ? roundToNinety(selectedFlavor.basePrice * sizeMultiplier) + extrasTotal
+    ? roundToNinety(selectedFlavor.basePrice * sizeMultiplier) + extrasTotal + crustPrice
     : 0;
 
   function handleAddToCart() {
@@ -246,15 +252,18 @@ export default function NewOrderPage() {
             <CardContent className="grid grid-cols-2 gap-2">
               {CRUSTS.map((c) => (
                 <button
-                  key={c}
-                  onClick={() => setCrust(c)}
-                  className={`p-3 rounded-[var(--radius-m)] border font-mono text-sm transition-colors cursor-pointer ${
-                    crust === c
+                  key={c.label}
+                  onClick={() => setCrust(c.label)}
+                  className={`flex items-center justify-between gap-2 p-3 rounded-[var(--radius-m)] border font-mono text-sm transition-colors cursor-pointer ${
+                    crust === c.label
                       ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
                       : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
                   }`}
                 >
-                  {c}
+                  <span>{c.label}</span>
+                  {c.price > 0 && (
+                    <span className="text-xs opacity-75">+R$ {c.price.toFixed(2).replace(".", ",")}</span>
+                  )}
                 </button>
               ))}
             </CardContent>
