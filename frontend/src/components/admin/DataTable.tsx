@@ -9,6 +9,7 @@ export interface Column<T> {
   key: keyof T | string;
   label: string;
   render?: (row: T) => React.ReactNode;
+  className?: string; // e.g. "flex-1 min-w-0" or "w-28 shrink-0"
 }
 
 interface DataTableProps<T> {
@@ -69,7 +70,7 @@ export function DataTable<T extends { id: number }>({
       {/* Header */}
       <div className="flex items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[500px]">
         {columns.map((col) => (
-          <div key={String(col.key)} className="flex-1 text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">
+          <div key={String(col.key)} className={`${col.className ?? "flex-1"} text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide truncate`}>
             {col.label}
           </div>
         ))}
@@ -93,7 +94,7 @@ export function DataTable<T extends { id: number }>({
             className="flex items-center h-13 px-5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/50 transition-colors"
           >
             {columns.map((col) => (
-              <div key={String(col.key)} className="flex-1 text-sm text-[var(--foreground)]">
+              <div key={String(col.key)} className={`${col.className ?? "flex-1"} text-sm text-[var(--foreground)] truncate`}>
                 {col.render ? col.render(row) : String((row as Record<string, unknown>)[String(col.key)] ?? "")}
               </div>
             ))}

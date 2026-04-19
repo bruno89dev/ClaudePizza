@@ -53,10 +53,11 @@ export default function AdminProductsPage() {
   }
 
   const columns: Column<Product>[] = [
-    { key: "name", label: "Nome" },
-    { key: "category", label: "Categoria" },
-    { key: "price", label: "Preço", render: (p) => `R$ ${p.price.toFixed(2).replace(".", ",")}` },
-    { key: "isAvailable", label: "Status", render: (p) => <Badge variant={p.isAvailable ? "success" : "secondary"}>{p.isAvailable ? "Disponível" : "Indisponível"}</Badge> },
+    { key: "name", label: "Nome", className: "flex-1 min-w-0" },
+    { key: "description", label: "Descrição", className: "flex-1 min-w-0" },
+    { key: "category", label: "Categoria", className: "w-28 shrink-0" },
+    { key: "price", label: "Preço", className: "w-28 shrink-0", render: (p) => `R$ ${p.price.toFixed(2).replace(".", ",")}` },
+    { key: "isAvailable", label: "Status", className: "w-28 shrink-0", render: (p) => <Badge variant={p.isAvailable ? "success" : "secondary"}>{p.isAvailable ? "Disponível" : "Indisponível"}</Badge> },
   ];
 
   return (

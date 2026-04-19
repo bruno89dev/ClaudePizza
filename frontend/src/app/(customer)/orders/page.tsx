@@ -130,7 +130,7 @@ export default function OrderTrackingPage() {
     });
   }, []);
 
-  // SignalR
+  // SignalR — register handler once
   useEffect(() => {
     let mounted = true;
     startOrderHub().then((hub) => {
@@ -143,6 +143,16 @@ export default function OrderTrackingPage() {
     });
     return () => { mounted = false; };
   }, []);
+
+  // Join each order's group so the server can push status updates
+  useEffect(() => {
+    if (orders.length === 0) return;
+    startOrderHub().then((hub) => {
+      orders.forEach((o) => {
+        hub.invoke("JoinOrderGroup", String(o.id)).catch(() => {});
+      });
+    });
+  }, [orders]);
 
   // Prompt rating for recently-delivered unrated orders
   useEffect(() => {

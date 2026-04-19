@@ -62,16 +62,18 @@ export default function AdminFlavorsPage() {
   }
 
   const columns: Column<Flavor>[] = [
-    { key: "name", label: "Nome" },
-    { key: "description", label: "Descrição" },
+    { key: "name", label: "Nome", className: "flex-1 min-w-0" },
+    { key: "description", label: "Descrição", className: "flex-1 min-w-0" },
     {
       key: "basePrice",
       label: "Preço base",
+      className: "w-32 shrink-0",
       render: (f) => `R$ ${f.basePrice.toFixed(2).replace(".", ",")}`,
     },
     {
       key: "isAvailable",
       label: "Status",
+      className: "w-32 shrink-0",
       render: (f) => (
         <Badge variant={f.isAvailable ? "success" : "secondary"}>
           {f.isAvailable ? "Disponível" : "Indisponível"}

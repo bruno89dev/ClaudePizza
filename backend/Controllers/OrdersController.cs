@@ -114,14 +114,18 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         return Ok(MapToResponse(order, activeToday));
     }
 
+    // Brazil Standard Time: UTC-3, no DST since 2019
+    private static readonly TimeSpan BrtOffset = TimeSpan.FromHours(-3);
+
     [Authorize(Roles = "Admin")]
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats([FromQuery] DateTime from, [FromQuery] DateTime to)
     {
         try
         {
-        var fromDate = DateTime.SpecifyKind(from.Date, DateTimeKind.Utc);
-        var toDate   = DateTime.SpecifyKind(to.Date.AddDays(1), DateTimeKind.Utc);
+        // Dates from frontend are BRT calendar dates; midnight BRT = 03:00 UTC
+        var fromDate = DateTime.SpecifyKind(from.Date.AddHours(3), DateTimeKind.Utc);
+        var toDate   = DateTime.SpecifyKind(to.Date.AddDays(1).AddHours(3), DateTimeKind.Utc);
 
         if ((toDate - fromDate).TotalDays > 91)
             return BadRequest("Intervalo máximo de 90 dias.");
@@ -133,7 +137,7 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             .ToListAsync();
 
         var dailyStats = orders
-            .GroupBy(o => o.CreatedAt.Date)
+            .GroupBy(o => o.CreatedAt.Add(BrtOffset).Date) // group by BRT calendar date
             .OrderBy(g => g.Key)
             .Select(g => new DailyStat(
                 g.Key.ToString("yyyy-MM-dd"),
@@ -155,8 +159,12 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             .Select(g => new FlavorStat(g.Key, g.Sum(i => i.Quantity)))
             .ToList();
 
+        var pizzaSizes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "Broto", "Média", "Grande", "Família", "Pequena" };
+
         var sizeBreakdown = orders
             .SelectMany(o => o.Items)
+            .Where(i => pizzaSizes.Contains(i.Size))
             .GroupBy(i => i.Size)
             .Select(g => new SizeStat(g.Key, g.Sum(i => i.Quantity)))
             .ToList();
@@ -210,12 +218,13 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         return NoContent();
     }
 
-    // Returns all active (non-delivered, non-cancelled) orders from today for queue calculation
+    // Returns all active (non-delivered, non-cancelled) orders from today (BRT) for queue calculation
     private async Task<List<Order>> GetActiveTodayAsync()
     {
-        var today = DateTime.UtcNow.Date;
+        var todayBrt = DateTime.UtcNow.Add(BrtOffset).Date;
+        var todayUtcStart = DateTime.SpecifyKind(todayBrt.Subtract(BrtOffset), DateTimeKind.Utc);
         return await db.Orders
-            .Where(o => o.CreatedAt >= today
+            .Where(o => o.CreatedAt >= todayUtcStart
                      && o.Status != OrderStatus.Entregue
                      && o.Status != OrderStatus.Cancelado)
             .ToListAsync();
@@ -227,8 +236,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
 
         if (o.Status != OrderStatus.Entregue && o.Status != OrderStatus.Cancelado)
         {
-            var today = DateTime.UtcNow.Date;
-            if (o.CreatedAt.Date == today)
+            var todayBrt = DateTime.UtcNow.Add(BrtOffset).Date;
+            if (o.CreatedAt.Add(BrtOffset).Date == todayBrt) // compare in BRT
             {
                 var position = activeToday.Count(a => a.Id != o.Id && a.CreatedAt < o.CreatedAt);
                 var dow = DateTime.UtcNow.DayOfWeek;

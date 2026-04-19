@@ -127,15 +127,15 @@ export default function AdminPromotionsPage() {
   const selectedDays = parseDays(form.weekDays);
 
   const columns: Column<Promotion>[] = [
-    { key: "name", label: "Nome" },
-    { key: "discountType", label: "Tipo", render: (p) => p.discountType === "Percentage" ? "% Percentual" : "R$ Fixo" },
-    { key: "discountValue", label: "Valor", render: (p) => p.discountType === "Percentage" ? `${p.discountValue}%` : `R$ ${p.discountValue.toFixed(2).replace(".", ",")}` },
-    { key: "applicableCategory", label: "Aplica em", render: (p) => p.applicableCategory ?? "Todas" },
+    { key: "name", label: "Nome", className: "flex-1 min-w-0" },
+    { key: "discountType", label: "Tipo", className: "w-28 shrink-0", render: (p) => p.discountType === "Percentage" ? "% Percentual" : "R$ Fixo" },
+    { key: "discountValue", label: "Valor", className: "w-24 shrink-0", render: (p) => p.discountType === "Percentage" ? `${p.discountValue}%` : `R$ ${p.discountValue.toFixed(2).replace(".", ",")}` },
+    { key: "applicableCategory", label: "Aplica em", className: "w-28 shrink-0", render: (p) => p.applicableCategory ?? "Todas" },
     {
-      key: "validTo", label: "Validade",
+      key: "validTo", label: "Validade", className: "w-32 shrink-0",
       render: (p) => p.isIndeterminate ? "Indeterminado" : (p.validTo ? new Date(p.validTo).toLocaleDateString("pt-BR") : "—"),
     },
-    { key: "isActive", label: "Status", render: (p) => <Badge variant={p.isActive ? "success" : "secondary"}>{p.isActive ? "Ativa" : "Inativa"}</Badge> },
+    { key: "isActive", label: "Status", className: "w-20 shrink-0", render: (p) => <Badge variant={p.isActive ? "success" : "secondary"}>{p.isActive ? "Ativa" : "Inativa"}</Badge> },
   ];
 
   return (
