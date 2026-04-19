@@ -128,6 +128,7 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
 
         var orders = await db.Orders
             .Include(o => o.Items).ThenInclude(i => i.Flavor)
+            .Include(o => o.User)
             .Where(o => o.CreatedAt >= fromDate && o.CreatedAt < toDate)
             .ToListAsync();
 
@@ -175,9 +176,16 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         var ratedOrders = orders.Where(o => o.Rating.HasValue).ToList();
         var averageRating = ratedOrders.Count > 0 ? ratedOrders.Average(o => (double)o.Rating!.Value) : 0.0;
 
+        var topClients = validOrders
+            .GroupBy(o => new { o.UserId, Name = o.User?.Name ?? o.UserId })
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .Select(g => new ClientStat(g.Key.Name, g.Count(), g.Sum(o => o.TotalAmount)))
+            .ToList();
+
         return Ok(new OrderStatsResponse(
             dailyStats, statusBreakdown, topFlavors, sizeBreakdown, deliveryTypeBreakdown,
-            totalRevenue, totalOrders, (decimal)averageTicket, cancellationRate, averageRating));
+            totalRevenue, totalOrders, (decimal)averageTicket, cancellationRate, averageRating, topClients));
         }
         catch (Exception ex)
         {

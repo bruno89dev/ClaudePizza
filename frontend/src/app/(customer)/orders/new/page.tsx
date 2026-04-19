@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, Plus, Minus, UtensilsCrossed, GlassWater } from "lucide-react";
+import { Search, ShoppingCart, Plus, Minus, UtensilsCrossed, GlassWater, Tag, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,20 @@ interface Product {
   price: number;
   category: string;
   isAvailable: boolean;
+}
+
+interface Promotion {
+  id: number;
+  name: string;
+  description: string;
+  discountType: "Percentage" | "FixedAmount";
+  discountValue: number;
+  isIndeterminate: boolean;
+  validFrom: string | null;
+  validTo: string | null;
+  weekDays: string | null;
+  applicableCategory: string | null;
+  isActive: boolean;
 }
 
 interface CartItem {
@@ -51,12 +65,12 @@ const CRUSTS: { label: string; price: number }[] = [
 ];
 
 const EXTRAS: { label: string; price: number }[] = [
-  { label: "Bacon",              price: 4.00 },
-  { label: "Cebola caramelizada",price: 3.00 },
-  { label: "Azeitona",           price: 2.00 },
-  { label: "Pimenta",            price: 1.50 },
-  { label: "Orégano extra",      price: 1.00 },
-  { label: "Cream cheese",       price: 5.00 },
+  { label: "Bacon",               price: 4.00 },
+  { label: "Cebola caramelizada", price: 3.00 },
+  { label: "Azeitona",            price: 2.00 },
+  { label: "Pimenta",             price: 1.50 },
+  { label: "Orégano extra",       price: 1.00 },
+  { label: "Cream cheese",        price: 5.00 },
 ];
 
 function roundToNinety(value: number): number {
@@ -65,27 +79,57 @@ function roundToNinety(value: number): number {
   return candidate >= value - 0.001 ? candidate : floored + 1.9;
 }
 
+function isPromoActive(p: Promotion): boolean {
+  if (!p.isActive) return false;
+  const now = new Date();
+  if (!p.isIndeterminate) {
+    if (p.validFrom && new Date(p.validFrom) > now) return false;
+    if (p.validTo   && new Date(p.validTo)   < now) return false;
+  }
+  if (p.weekDays) {
+    const days = p.weekDays.split(",").map(Number);
+    if (!days.includes(now.getDay())) return false;
+  }
+  return true;
+}
+
+function promoLabel(p: Promotion): string {
+  const discount = p.discountType === "Percentage"
+    ? `${p.discountValue}% de desconto`
+    : `R$ ${p.discountValue.toFixed(2).replace(".", ",")} de desconto`;
+  const where = p.applicableCategory ? ` em ${p.applicableCategory}` : "";
+  return `${discount}${where} — ${p.name}`;
+}
+
 export default function NewOrderPage() {
   const router = useRouter();
   const customizeRef = useRef<HTMLDivElement>(null);
 
-  const [flavors, setFlavors] = useState<Flavor[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [flavors,   setFlavors]   = useState<Flavor[]>([]);
+  const [products,  setProducts]  = useState<Product[]>([]);
+  const [promos,    setPromos]    = useState<Promotion[]>([]);
+  const [promoDismissed, setPromoDismissed] = useState(false);
+  const [search,    setSearch]    = useState("");
+  const [cart,      setCart]      = useState<CartItem[]>([]);
 
-  // Pizza customization state
+  // Upsell modal state
+  const [upsellModal, setUpsellModal] = useState(false);
+
+  // Pizza customization
   const [selectedFlavor, setSelectedFlavor] = useState<Flavor | null>(null);
-  const [size, setSize] = useState("Média");
+  const [size,  setSize]  = useState("Média");
   const [crust, setCrust] = useState("Sem borda");
   const [extras, setExtras] = useState<string[]>([]);
 
   useEffect(() => {
     api.get<Flavor[]>("/api/flavors").then((d) => setFlavors(d.filter((f) => f.isAvailable)));
     api.get<Product[]>("/api/products").then((d) => setProducts(d.filter((p) => p.isAvailable)));
+    api.get<Promotion[]>("/api/promotions").then(setPromos).catch(() => {});
     const raw = localStorage.getItem("cart");
     if (raw) setCart(JSON.parse(raw));
   }, []);
+
+  const activePromos = promos.filter(isPromoActive);
 
   function selectFlavor(flavor: Flavor) {
     setSelectedFlavor(flavor);
@@ -100,15 +144,15 @@ export default function NewOrderPage() {
   }
 
   const sizeMultiplier = SIZES.find((s) => s.key === size)?.multiplier ?? 1;
-  const extrasTotal = extras.reduce((s, l) => s + (EXTRAS.find((e) => e.label === l)?.price ?? 0), 0);
-  const crustPrice = CRUSTS.find((c) => c.label === crust)?.price ?? 0;
+  const extrasTotal    = extras.reduce((s, l) => s + (EXTRAS.find((e) => e.label === l)?.price ?? 0), 0);
+  const crustPrice     = CRUSTS.find((c) => c.label === crust)?.price ?? 0;
   const pizzaUnitPrice = selectedFlavor
     ? roundToNinety(selectedFlavor.basePrice * sizeMultiplier) + extrasTotal + crustPrice
     : 0;
 
   function addPizzaToCart() {
     if (!selectedFlavor) return;
-    const item: CartItem = {
+    saveCart([...cart, {
       type: "pizza",
       flavorId: selectedFlavor.id,
       flavorName: selectedFlavor.name,
@@ -117,37 +161,32 @@ export default function NewOrderPage() {
       extras: extras.length ? JSON.stringify(extras) : null,
       quantity: 1,
       unitPrice: pizzaUnitPrice,
-    };
-    saveCart([...cart, item]);
+    }]);
     setSelectedFlavor(null);
     setExtras([]);
     setCrust("Sem borda");
   }
 
   function addProductToCart(product: Product) {
-    const existing = cart.findIndex((i) => i.type === "product" && i.flavorName === product.name);
-    let updated: CartItem[];
-    if (existing >= 0) {
-      updated = cart.map((i, idx) => idx === existing ? { ...i, quantity: i.quantity + 1 } : i);
-    } else {
-      updated = [...cart, {
-        type: "product",
-        flavorId: null,
-        flavorName: product.name,
-        productCategory: product.category,
-        size: "",
-        crust: null,
-        extras: null,
-        quantity: 1,
-        unitPrice: product.price,
-      }];
-    }
+    const idx = cart.findIndex((i) => i.type === "product" && i.flavorName === product.name);
+    const updated = idx >= 0
+      ? cart.map((i, j) => j === idx ? { ...i, quantity: i.quantity + 1 } : i)
+      : [...cart, {
+          type: "product" as const,
+          flavorId: null,
+          flavorName: product.name,
+          productCategory: product.category,
+          size: "",
+          crust: null,
+          extras: null,
+          quantity: 1,
+          unitPrice: product.price,
+        }];
     saveCart(updated);
   }
 
   function removeFromCart(idx: number) {
-    const updated = cart.filter((_, i) => i !== idx);
-    saveCart(updated);
+    saveCart(cart.filter((_, i) => i !== idx));
   }
 
   function saveCart(items: CartItem[]) {
@@ -155,20 +194,27 @@ export default function NewOrderPage() {
     localStorage.setItem("cart", JSON.stringify(items));
   }
 
-  const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const subtotal    = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const filteredFlavors = flavors.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
+  const entradas    = products.filter((p) => p.category === "Entradas");
+  const bebidas     = [...products.filter((p) => p.category === "Bebidas")].sort((a, b) => b.price - a.price);
+  const hasEntrada  = cart.some((i) => i.type === "product" && i.productCategory === "Entradas");
+  const hasBebida   = cart.some((i) => i.type === "product" && i.productCategory === "Bebidas");
 
-  const filteredFlavors = flavors.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const hasPizza = cart.some((i) => i.type === "pizza");
+  const needsUpsell = hasPizza && (!hasEntrada || !hasBebida);
 
-  const entradas = products.filter((p) => p.category === "Entradas");
-  const bebidas = [...products.filter((p) => p.category === "Bebidas")].sort((a, b) => b.price - a.price);
-
-  const hasEntrada = cart.some((i) => i.type === "product" && i.productCategory === "Entradas");
-  const hasBebida  = cart.some((i) => i.type === "product" && i.productCategory === "Bebidas");
+  function handleGoToCheckout() {
+    if (needsUpsell) {
+      setUpsellModal(true);
+    } else {
+      router.push("/checkout");
+    }
+  }
 
   function ProductCard({ product }: { product: Product }) {
-    const qty = cart.filter((i) => i.type === "product" && i.flavorName === product.name).reduce((s, i) => s + i.quantity, 0);
+    const qty = cart.filter((i) => i.type === "product" && i.flavorName === product.name)
+      .reduce((s, i) => s + i.quantity, 0);
     return (
       <div className="flex items-center justify-between gap-3 p-3 rounded-[var(--radius-m)] border border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)] transition-colors">
         <div className="flex-1 min-w-0">
@@ -191,26 +237,32 @@ export default function NewOrderPage() {
     );
   }
 
-  function UpsellBanner({ icon, text, action }: { icon: React.ReactNode; text: string; action: string }) {
-    return (
-      <div className="flex items-center gap-3 p-3 rounded-[var(--radius-m)] border border-dashed border-[var(--primary)]/40 bg-[var(--primary)]/5">
-        <div className="text-[var(--primary)]">{icon}</div>
-        <div className="flex-1">
-          <p className="text-sm font-mono text-[var(--foreground)]">{text}</p>
-          <p className="text-xs text-[var(--muted-foreground)]">{action}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
       <header className="flex items-center h-16 lg:h-20 px-4 lg:px-8 border-b border-[var(--border)] shrink-0">
         <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Novo Pedido</h1>
       </header>
 
+      {/* Banner de promoções ativas */}
+      {activePromos.length > 0 && !promoDismissed && (
+        <div className="mx-4 lg:mx-8 mt-4 p-3 rounded-[var(--radius-m)] border border-[var(--primary)]/40 bg-[var(--primary)]/8 flex items-start gap-3">
+          <Tag size={16} className="text-[var(--primary)] mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-mono font-semibold text-[var(--primary)]">
+              {activePromos.length === 1 ? "Promoção ativa hoje!" : `${activePromos.length} promoções ativas hoje!`}
+            </p>
+            {activePromos.map((p) => (
+              <p key={p.id} className="text-xs text-[var(--muted-foreground)] mt-0.5">{promoLabel(p)}</p>
+            ))}
+          </div>
+          <button onClick={() => setPromoDismissed(true)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row flex-1 gap-6 p-4 lg:p-8 overflow-y-auto lg:overflow-hidden">
-        {/* Coluna esquerda — seções */}
+        {/* Coluna esquerda */}
         <div className="flex-1 flex flex-col gap-8 lg:overflow-y-auto scrollbar-thin">
 
           {/* ── 1. ENTRADAS ── */}
@@ -220,20 +272,9 @@ export default function NewOrderPage() {
               Entradas
             </h2>
             {entradas.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {entradas.map((p) => <ProductCard key={p.id} product={p} />)}
-                </div>
-                {!hasEntrada && (
-                  <div className="mt-3">
-                    <UpsellBanner
-                      icon={<UtensilsCrossed size={18} />}
-                      text="Que tal uma entrada para começar?"
-                      action="Adicione um petisco ou porção antes da pizza"
-                    />
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {entradas.map((p) => <ProductCard key={p.id} product={p} />)}
+              </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)]">Sem entradas disponíveis no momento.</p>
             )}
@@ -255,64 +296,53 @@ export default function NewOrderPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
-              {filteredFlavors.map((flavor) => {
-                const price = roundToNinety(flavor.basePrice); // Pequena tem multiplier 1
-                return (
-                  <button
-                    key={flavor.id}
-                    onClick={() => selectFlavor(flavor)}
-                    className={`flex flex-col gap-1 p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
-                      selectedFlavor?.id === flavor.id
-                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
-                        : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]"
-                    }`}
-                  >
-                    <span className="font-mono text-sm font-medium text-[var(--foreground)]">{flavor.name}</span>
-                    <span className="text-xs text-[var(--muted-foreground)] line-clamp-1">{flavor.description}</span>
-                    <span className="font-mono text-sm text-[var(--primary)] mt-0.5">
-                      a partir de R$ {price.toFixed(2).replace(".", ",")}
-                    </span>
-                  </button>
-                );
-              })}
+              {filteredFlavors.map((flavor) => (
+                <button
+                  key={flavor.id}
+                  onClick={() => selectFlavor(flavor)}
+                  className={`flex flex-col gap-1 p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
+                    selectedFlavor?.id === flavor.id
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
+                      : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]"
+                  }`}
+                >
+                  <span className="font-mono text-sm font-medium text-[var(--foreground)]">{flavor.name}</span>
+                  <span className="text-xs text-[var(--muted-foreground)] line-clamp-1">{flavor.description}</span>
+                  <span className="font-mono text-sm text-[var(--primary)] mt-0.5">
+                    a partir de R$ {roundToNinety(flavor.basePrice).toFixed(2).replace(".", ",")}
+                  </span>
+                </button>
+              ))}
               {filteredFlavors.length === 0 && (
                 <p className="text-sm text-[var(--muted-foreground)] col-span-3">Nenhum sabor encontrado.</p>
               )}
             </div>
 
-            {/* Painel de personalização — âncora */}
+            {/* Painel de personalização */}
             {selectedFlavor && (
               <div ref={customizeRef} className="mt-4 p-4 rounded-[var(--radius-m)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 space-y-4">
                 <p className="font-mono font-semibold text-[var(--foreground)]">{selectedFlavor.name}</p>
 
-                {/* Tamanho */}
                 <div className="space-y-2">
                   <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Tamanho</p>
                   <div className="flex gap-2">
                     {SIZES.map((s) => (
-                      <button
-                        key={s.key}
-                        onClick={() => setSize(s.key)}
+                      <button key={s.key} onClick={() => setSize(s.key)}
                         className={`flex-1 py-2 rounded-[var(--radius-m)] border font-mono text-xs font-medium transition-colors cursor-pointer ${
                           size === s.key
                             ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
                             : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
                         }`}
-                      >
-                        {s.label}
-                      </button>
+                      >{s.label}</button>
                     ))}
                   </div>
                 </div>
 
-                {/* Borda */}
                 <div className="space-y-2">
                   <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Borda</p>
                   <div className="grid grid-cols-2 gap-2">
                     {CRUSTS.map((c) => (
-                      <button
-                        key={c.label}
-                        onClick={() => setCrust(c.label)}
+                      <button key={c.label} onClick={() => setCrust(c.label)}
                         className={`flex items-center justify-between gap-1 px-3 py-2 rounded-[var(--radius-m)] border font-mono text-xs transition-colors cursor-pointer ${
                           crust === c.label
                             ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
@@ -326,19 +356,15 @@ export default function NewOrderPage() {
                   </div>
                 </div>
 
-                {/* Extras */}
                 <div className="space-y-2">
                   <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Extras</p>
                   <div className="grid grid-cols-2 gap-2">
                     {EXTRAS.map((extra) => {
                       const checked = extras.includes(extra.label);
                       return (
-                        <label
-                          key={extra.label}
+                        <label key={extra.label}
                           className={`flex items-center gap-2 px-3 py-2 rounded-[var(--radius-m)] border text-xs transition-colors cursor-pointer ${
-                            checked
-                              ? "border-[var(--primary)] bg-[var(--primary)]/10"
-                              : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
+                            checked ? "border-[var(--primary)] bg-[var(--primary)]/10" : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
                           }`}
                         >
                           <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.label)} className="w-3.5 h-3.5 accent-[var(--primary)] shrink-0" />
@@ -350,7 +376,6 @@ export default function NewOrderPage() {
                   </div>
                 </div>
 
-                {/* Preço + Adicionar */}
                 <div className="flex items-center justify-between pt-2 border-t border-[var(--primary)]/20">
                   <span className="font-mono font-bold text-[var(--primary)]">
                     R$ {pizzaUnitPrice.toFixed(2).replace(".", ",")}
@@ -368,20 +393,9 @@ export default function NewOrderPage() {
               Bebidas
             </h2>
             {bebidas.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {bebidas.map((p) => <ProductCard key={p.id} product={p} />)}
-                </div>
-                {!hasBebida && (
-                  <div className="mt-3">
-                    <UpsellBanner
-                      icon={<GlassWater size={18} />}
-                      text="Adicione uma bebida ao seu pedido"
-                      action="Refrigerantes, sucos e muito mais"
-                    />
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {bebidas.map((p) => <ProductCard key={p.id} product={p} />)}
+              </div>
             ) : (
               <p className="text-sm text-[var(--muted-foreground)]">Sem bebidas disponíveis no momento.</p>
             )}
@@ -415,10 +429,8 @@ export default function NewOrderPage() {
                     <span className="font-mono text-sm text-[var(--primary)]">
                       R$ {(item.unitPrice * item.quantity).toFixed(2).replace(".", ",")}
                     </span>
-                    <button
-                      onClick={() => removeFromCart(i)}
-                      className="ml-1 text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer"
-                    >
+                    <button onClick={() => removeFromCart(i)}
+                      className="ml-1 text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer">
                       <Minus size={12} />
                     </button>
                   </div>
@@ -430,13 +442,11 @@ export default function NewOrderPage() {
                     <span>Total</span>
                     <span className="text-[var(--primary)]">R$ {subtotal.toFixed(2).replace(".", ",")}</span>
                   </div>
-                  <Button className="w-full" size="lg" onClick={() => router.push("/checkout")}>
+                  <Button className="w-full" size="lg" onClick={handleGoToCheckout}>
                     Ir para o checkout
                   </Button>
-                  <button
-                    onClick={() => saveCart([])}
-                    className="w-full text-xs text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => saveCart([])}
+                    className="w-full text-xs text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer">
                     Limpar carrinho
                   </button>
                 </>
@@ -445,6 +455,52 @@ export default function NewOrderPage() {
           </Card>
         </div>
       </div>
+
+      {/* Modal de upsell */}
+      {upsellModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="text-base">Seu pedido está quase completo!</CardTitle>
+                <button onClick={() => setUpsellModal(false)} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer shrink-0">
+                  <X size={16} />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!hasEntrada && entradas.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-mono font-semibold text-[var(--foreground)] flex items-center gap-2">
+                    <UtensilsCrossed size={14} className="text-[var(--primary)]" /> Que tal uma entrada?
+                  </p>
+                  <div className="space-y-2">
+                    {entradas.slice(0, 3).map((p) => <ProductCard key={p.id} product={p} />)}
+                  </div>
+                </div>
+              )}
+              {!hasBebida && bebidas.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-mono font-semibold text-[var(--foreground)] flex items-center gap-2">
+                    <GlassWater size={14} className="text-[var(--primary)]" /> Adicione uma bebida
+                  </p>
+                  <div className="space-y-2">
+                    {bebidas.slice(0, 3).map((p) => <ProductCard key={p.id} product={p} />)}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-3 pt-2 border-t border-[var(--border)]">
+                <Button variant="outline" className="flex-1" onClick={() => { setUpsellModal(false); router.push("/checkout"); }}>
+                  Continuar sem adicionar
+                </Button>
+                <Button className="flex-1" onClick={() => setUpsellModal(false)}>
+                  Adicionar itens
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

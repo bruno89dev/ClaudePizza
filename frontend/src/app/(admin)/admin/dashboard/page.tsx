@@ -13,6 +13,7 @@ interface StatusStat { status: string; count: number }
 interface FlavorStat { flavorName: string; count: number }
 interface SizeStat { size: string; count: number }
 interface DeliveryTypeStat { type: string; count: number }
+interface ClientStat { userName: string; orderCount: number; totalSpent: number }
 
 interface Stats {
   dailyStats: DailyStat[];
@@ -25,6 +26,7 @@ interface Stats {
   averageTicket: number;
   cancellationRate: number;
   averageRating: number;
+  topClients: ClientStat[];
 }
 
 const CHART_COLORS = ["#FF8400", "#3B82F6", "#22C55E", "#F59E0B", "#FF5C33", "#8B5CF6"];
@@ -314,25 +316,64 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Top flavors horizontal bar */}
-          <Card>
-            <CardHeader><CardTitle>Top 5 sabores mais pedidos</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <HBarChart data={stats.topFlavors} layout="vertical" margin={{ top: 0, right: 24, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)", fontFamily: "monospace" }} allowDecimals={false} />
-                  <YAxis type="category" dataKey="flavorName" width={140}
-                    tick={{ fontSize: 11, fill: "var(--foreground)", fontFamily: "monospace" }} />
-                  <Tooltip
-                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontFamily: "monospace", fontSize: 12 }}
-                    formatter={(v) => [Number(v), "Pedidos"]}
-                  />
-                  <Bar dataKey="count" fill="#FF8400" radius={[0, 4, 4, 0]} />
-                </HBarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Top flavors + Top clients */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader><CardTitle>Top 5 sabores mais pedidos</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <HBarChart data={stats.topFlavors} layout="vertical" margin={{ top: 0, right: 24, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 10, fill: "var(--muted-foreground)", fontFamily: "monospace" }} allowDecimals={false} />
+                    <YAxis type="category" dataKey="flavorName" width={140}
+                      tick={{ fontSize: 11, fill: "var(--foreground)", fontFamily: "monospace" }} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontFamily: "monospace", fontSize: 12 }}
+                      formatter={(v) => [Number(v), "Pedidos"]}
+                    />
+                    <Bar dataKey="count" fill="#FF8400" radius={[0, 4, 4, 0]} />
+                  </HBarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Top 5 clientes</CardTitle></CardHeader>
+              <CardContent>
+                {stats.topClients.length === 0 ? (
+                  <p className="text-sm text-[var(--muted-foreground)]">Sem dados no período.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {stats.topClients.map((c, i) => {
+                      const maxOrders = stats.topClients[0].orderCount;
+                      return (
+                        <div key={c.userName} className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-sm text-[var(--foreground)] truncate">
+                              <span className="text-[var(--muted-foreground)] mr-1.5">{i + 1}.</span>
+                              {c.userName}
+                            </span>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="font-mono text-xs text-[var(--muted-foreground)]">{c.orderCount} ped.</span>
+                              <span className="font-mono text-xs text-[var(--primary)]">
+                                R$ {c.totalSpent.toFixed(2).replace(".", ",")}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[var(--primary)]"
+                              style={{ width: `${(c.orderCount / maxOrders) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>
