@@ -38,7 +38,7 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
   return (
     <div className="relative group inline-flex">
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-mono bg-[var(--foreground)] text-[var(--background)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-mono bg-[var(--foreground)] text-[var(--background)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
         {text}
       </div>
     </div>
