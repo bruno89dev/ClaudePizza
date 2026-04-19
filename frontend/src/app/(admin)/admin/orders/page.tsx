@@ -26,6 +26,7 @@ interface Order {
   createdAt: string;
   items: OrderItem[];
   estimatedDeliveryAt: string | null;
+  rating: number | null;
 }
 
 const STATUS_VARIANT: Record<OrderStatus, "warning" | "success" | "secondary" | "destructive" | "default"> = {
@@ -167,8 +168,8 @@ export default function AdminOrdersPage() {
         {/* Scrollable table */}
         <div className="overflow-x-auto">
         {/* Header */}
-        <div className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px] items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[700px]">
-          {["#", "Cliente", "Tipo", "Status", "Total", "Data", "Ações"].map((h) => (
+        <div className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_80px_100px] items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[780px]">
+          {["#", "Cliente", "Tipo", "Status", "Total", "Data", "Aval.", "Ações"].map((h) => (
             <div key={h} className="text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">
               {h}
             </div>
@@ -185,7 +186,7 @@ export default function AdminOrdersPage() {
           {paged.map((order) => (
             <div
               key={order.id}
-              className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px] items-center min-h-[52px] px-5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/40 transition-colors"
+              className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_80px_100px] items-center min-h-[52px] px-5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/40 transition-colors min-w-[780px]"
             >
               <span className="font-mono text-sm text-[var(--muted-foreground)]">#{order.id}</span>
               <div>
@@ -208,6 +209,9 @@ export default function AdminOrdersPage() {
                   day: "2-digit", month: "2-digit",
                   hour: "2-digit", minute: "2-digit",
                 })}
+              </span>
+              <span className="font-mono text-sm text-[var(--muted-foreground)]">
+                {order.rating ? "⭐".repeat(order.rating) : "—"}
               </span>
               <ActionButtons order={order} onUpdate={handleUpdate} loading={loading} />
             </div>

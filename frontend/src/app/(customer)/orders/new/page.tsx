@@ -29,6 +29,7 @@ interface CartItem {
   type: "pizza" | "product";
   flavorId: number | null;
   flavorName: string;
+  productCategory?: string;
   size: string;
   crust: string | null;
   extras: string | null;
@@ -133,6 +134,7 @@ export default function NewOrderPage() {
         type: "product",
         flavorId: null,
         flavorName: product.name,
+        productCategory: product.category,
         size: "",
         crust: null,
         extras: null,
@@ -162,14 +164,8 @@ export default function NewOrderPage() {
   const entradas = products.filter((p) => p.category === "Entradas");
   const bebidas = [...products.filter((p) => p.category === "Bebidas")].sort((a, b) => b.price - a.price);
 
-  const hasEntrada = cart.some((i) => {
-    const p = products.find((p) => p.name === i.flavorName);
-    return p?.category === "Entradas";
-  });
-  const hasBebida = cart.some((i) => {
-    const p = products.find((p) => p.name === i.flavorName);
-    return p?.category === "Bebidas";
-  });
+  const hasEntrada = cart.some((i) => i.type === "product" && i.productCategory === "Entradas");
+  const hasBebida  = cart.some((i) => i.type === "product" && i.productCategory === "Bebidas");
 
   function ProductCard({ product }: { product: Product }) {
     const qty = cart.filter((i) => i.type === "product" && i.flavorName === product.name).reduce((s, i) => s + i.quantity, 0);
@@ -218,26 +214,30 @@ export default function NewOrderPage() {
         <div className="flex-1 flex flex-col gap-8 lg:overflow-y-auto scrollbar-thin">
 
           {/* ── 1. ENTRADAS ── */}
-          {entradas.length > 0 && (
-            <section>
-              <h2 className="font-mono font-bold text-base mb-3 text-[var(--foreground)] flex items-center gap-2">
-                <UtensilsCrossed size={16} className="text-[var(--primary)]" />
-                Entradas
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {entradas.map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-              {!hasEntrada && (
-                <div className="mt-3">
-                  <UpsellBanner
-                    icon={<UtensilsCrossed size={18} />}
-                    text="Que tal uma entrada para começar?"
-                    action="Adicione um petisco ou porção antes da pizza"
-                  />
+          <section>
+            <h2 className="font-mono font-bold text-base mb-3 text-[var(--foreground)] flex items-center gap-2">
+              <UtensilsCrossed size={16} className="text-[var(--primary)]" />
+              Entradas
+            </h2>
+            {entradas.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {entradas.map((p) => <ProductCard key={p.id} product={p} />)}
                 </div>
-              )}
-            </section>
-          )}
+                {!hasEntrada && (
+                  <div className="mt-3">
+                    <UpsellBanner
+                      icon={<UtensilsCrossed size={18} />}
+                      text="Que tal uma entrada para começar?"
+                      action="Adicione um petisco ou porção antes da pizza"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[var(--muted-foreground)]">Sem entradas disponíveis no momento.</p>
+            )}
+          </section>
 
           {/* ── 2. PIZZAS ── */}
           <section>
@@ -256,7 +256,7 @@ export default function NewOrderPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
               {filteredFlavors.map((flavor) => {
-                const price = roundToNinety(flavor.basePrice * (SIZES.find((s) => s.key === "Média")?.multiplier ?? 1));
+                const price = roundToNinety(flavor.basePrice); // Pequena tem multiplier 1
                 return (
                   <button
                     key={flavor.id}
@@ -362,26 +362,30 @@ export default function NewOrderPage() {
           </section>
 
           {/* ── 3. BEBIDAS ── */}
-          {bebidas.length > 0 && (
-            <section>
-              <h2 className="font-mono font-bold text-base mb-3 text-[var(--foreground)] flex items-center gap-2">
-                <GlassWater size={16} className="text-[var(--primary)]" />
-                Bebidas
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {bebidas.map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-              {!hasBebida && (
-                <div className="mt-3">
-                  <UpsellBanner
-                    icon={<GlassWater size={18} />}
-                    text="Adicione uma bebida ao seu pedido"
-                    action="Refrigerantes, sucos e muito mais"
-                  />
+          <section>
+            <h2 className="font-mono font-bold text-base mb-3 text-[var(--foreground)] flex items-center gap-2">
+              <GlassWater size={16} className="text-[var(--primary)]" />
+              Bebidas
+            </h2>
+            {bebidas.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {bebidas.map((p) => <ProductCard key={p.id} product={p} />)}
                 </div>
-              )}
-            </section>
-          )}
+                {!hasBebida && (
+                  <div className="mt-3">
+                    <UpsellBanner
+                      icon={<GlassWater size={18} />}
+                      text="Adicione uma bebida ao seu pedido"
+                      action="Refrigerantes, sucos e muito mais"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-[var(--muted-foreground)]">Sem bebidas disponíveis no momento.</p>
+            )}
+          </section>
         </div>
 
         {/* Coluna direita — carrinho */}

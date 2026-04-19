@@ -95,7 +95,12 @@ export default function DashboardPage() {
       const data = await api.get<Stats>(`/api/orders/stats?from=${f}&to=${t}`);
       setStats(data);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Erro ao carregar dados.");
+      const msg = err instanceof Error ? err.message : "";
+      showToast(
+        msg.toLowerCase().includes("fetch")
+          ? "Servidor temporariamente indisponível. Aguarde um momento e tente novamente."
+          : msg || "Erro ao carregar dados."
+      );
     } finally {
       setLoading(false);
     }

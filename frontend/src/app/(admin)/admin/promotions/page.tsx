@@ -99,7 +99,12 @@ export default function AdminPromotionsPage() {
       ? parseBRLValue(valueRaw)
       : parseFloat(valueRaw) || 0;
 
-    const payload = { ...form, discountValue };
+    const payload = {
+      ...form,
+      discountValue,
+      validFrom: form.isIndeterminate || !form.validFrom ? null : form.validFrom,
+      validTo:   form.isIndeterminate || !form.validTo   ? null : form.validTo,
+    };
     setSaving(true);
     try {
       if (modal.editing) await api.put(`/api/promotions/${modal.editing.id}`, payload);

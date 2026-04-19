@@ -162,14 +162,20 @@ using (var scope = app.Services.CreateScope())
     if (!db.Products.Any())
     {
         db.Products.AddRange(
-            new Product { Name = "Coca-Cola 2L", Description = "Refrigerante gelado", Price = 12.00m, Category = "Bebida" },
-            new Product { Name = "Suco de Laranja 500ml", Description = "Suco natural", Price = 10.00m, Category = "Bebida" },
-            new Product { Name = "Água Mineral 500ml", Description = "Sem gás", Price = 5.00m, Category = "Bebida" },
-            new Product { Name = "Bordão de Alho", Description = "Porção de pão de alho", Price = 14.90m, Category = "Entrada" },
-            new Product { Name = "Batata Frita", Description = "Porção crocante com cheddar", Price = 22.90m, Category = "Entrada" }
+            new Product { Name = "Coca-Cola 2L",         Description = "Refrigerante gelado",          Price = 12.00m, Category = "Bebidas" },
+            new Product { Name = "Suco de Laranja 500ml",Description = "Suco natural",                 Price = 10.00m, Category = "Bebidas" },
+            new Product { Name = "Água Mineral 500ml",   Description = "Sem gás",                      Price = 5.00m,  Category = "Bebidas" },
+            new Product { Name = "Bordão de Alho",       Description = "Porção de pão de alho",        Price = 14.90m, Category = "Entradas" },
+            new Product { Name = "Batata Frita",         Description = "Porção crocante com cheddar",  Price = 22.90m, Category = "Entradas" }
         );
         await db.SaveChangesAsync();
     }
+
+    // Corrigir categorias antigas em singular → plural
+    var wrongCat = db.Products.Where(p => p.Category == "Bebida" || p.Category == "Entrada").ToList();
+    foreach (var p in wrongCat)
+        p.Category = p.Category == "Bebida" ? "Bebidas" : "Entradas";
+    if (wrongCat.Any()) await db.SaveChangesAsync();
 }
 
 // Swagger available in all environments (portfolio project)
