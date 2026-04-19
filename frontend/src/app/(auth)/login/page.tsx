@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pizza } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -55,15 +54,12 @@ export default function LoginPage() {
       >
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80" />
-        <div className="relative flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <Pizza size={48} className="text-[var(--primary)]" />
-            <span className="font-mono font-bold text-4xl tracking-[0.2em] text-[var(--primary)]">
-              BELLA ROMA
-            </span>
-          </div>
-          <p className="text-white/60 text-lg font-light">
-            Bella Roma Pizzaria — Sabor que conecta pessoas.
+        <div className="relative flex flex-col gap-3">
+          <span style={{ fontFamily: "var(--font-display)" }} className="font-bold text-5xl tracking-[0.1em] text-[var(--primary)]">
+            Bella Roma
+          </span>
+          <p className="text-white/60 text-lg italic" style={{ fontFamily: "var(--font-display)" }}>
+            O sabor da Itália em sua mesa
           </p>
         </div>
       </div>
@@ -72,10 +68,9 @@ export default function LoginPage() {
       <div className="flex flex-1 lg:max-w-[576px] items-center justify-center bg-[var(--card)] px-8 lg:px-16">
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile brand */}
-          <div className="flex lg:hidden flex-col items-center gap-2">
-            <Pizza size={40} className="text-[var(--primary)]" />
-            <span className="font-mono font-bold text-2xl tracking-widest text-[var(--foreground)]">
-              BELLA ROMA
+          <div className="flex lg:hidden flex-col items-center gap-1">
+            <span style={{ fontFamily: "var(--font-display)" }} className="font-bold text-3xl tracking-[0.1em] text-[var(--primary)]">
+              Bella Roma
             </span>
           </div>
 

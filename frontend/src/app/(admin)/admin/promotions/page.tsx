@@ -21,15 +21,18 @@ interface Promotion {
   validTo: string | null;
   weekDays: string | null;       // "1,2,3,4,5"
   applicableCategory: string | null;
+  applicableSize: string | null;
   isActive: boolean;
 }
 
 type FormState = Omit<Promotion, "id">;
 
+const DRINK_SIZES = ["Lata 350mL", "Latão 473mL", "600mL", "1L", "2L"];
+
 const EMPTY: FormState = {
   name: "", description: "", discountType: "Percentage", discountValue: 0,
   isIndeterminate: false, validFrom: "", validTo: "",
-  weekDays: null, applicableCategory: null, isActive: true,
+  weekDays: null, applicableCategory: null, applicableSize: null, isActive: true,
 };
 
 const WEEK_DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -78,6 +81,7 @@ export default function AdminPromotionsPage() {
       validFrom: p.validFrom ? p.validFrom.slice(0, 10) : "",
       validTo: p.validTo ? p.validTo.slice(0, 10) : "",
       weekDays: p.weekDays, applicableCategory: p.applicableCategory,
+      applicableSize: p.applicableSize,
       isActive: p.isActive,
     });
     if (p.discountType === "FixedAmount") {
@@ -209,13 +213,28 @@ export default function AdminPromotionsPage() {
                 <label className="text-sm font-mono">Aplica em</label>
                 <select
                   value={form.applicableCategory ?? ""}
-                  onChange={(e) => setForm({ ...form, applicableCategory: e.target.value || null })}
+                  onChange={(e) => setForm({ ...form, applicableCategory: e.target.value || null, applicableSize: null })}
                   className={selectCls}
                 >
                   <option value="">Todas as categorias</option>
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
+
+              {/* Tamanho de bebida */}
+              {form.applicableCategory === "Bebidas" && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-mono">Tamanho da bebida</label>
+                  <select
+                    value={form.applicableSize ?? ""}
+                    onChange={(e) => setForm({ ...form, applicableSize: e.target.value || null })}
+                    className={selectCls}
+                  >
+                    <option value="">Todos os tamanhos</option>
+                    {DRINK_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
 
               {/* Duração */}
               <div className="space-y-3">

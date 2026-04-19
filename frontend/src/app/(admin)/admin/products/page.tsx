@@ -21,6 +21,7 @@ type FormState = Omit<Product, "id">;
 const EMPTY: FormState = { name: "", description: "", price: 0, category: "", isAvailable: true };
 
 const CATEGORIES = ["Bebidas", "Entradas", "Sobremesas", "Outros"];
+const DRINK_SIZES = ["Lata 350mL", "Latão 473mL", "600mL", "1L", "2L"];
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -76,10 +77,24 @@ export default function AdminProductsPage() {
                 <label className="text-sm font-mono">Nome</label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-mono">Descrição</label>
-                <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              </div>
+              {form.category === "Bebidas" ? (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-mono">Tamanho</label>
+                  <select
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="flex h-10 w-full rounded-[var(--radius-m)] border border-[var(--input)] bg-[var(--card)] px-3 text-sm text-[var(--foreground)]"
+                  >
+                    <option value="">Selecione...</option>
+                    {DRINK_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-mono">Descrição</label>
+                  <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-sm font-mono">Preço (R$)</label>

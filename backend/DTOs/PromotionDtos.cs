@@ -12,6 +12,7 @@ public record PromotionRequest(
     DateTime? ValidTo,
     string? WeekDays,
     string? ApplicableCategory,
+    string? ApplicableSize,
     bool IsActive = true);
 
 public record PromotionResponse(
@@ -25,5 +26,6 @@ public record PromotionResponse(
     DateTime? ValidTo,
     string? WeekDays,
     string? ApplicableCategory,
+    string? ApplicableSize,
     bool IsActive,
     DateTime CreatedAt);

@@ -14,7 +14,7 @@ public class PromotionsController(AppDbContext db) : ControllerBase
     private static PromotionResponse Map(Promotion p) => new(
         p.Id, p.Name, p.Description, p.DiscountType, p.DiscountValue,
         p.IsIndeterminate, p.ValidFrom, p.ValidTo,
-        p.WeekDays, p.ApplicableCategory, p.IsActive, p.CreatedAt);
+        p.WeekDays, p.ApplicableCategory, p.ApplicableSize, p.IsActive, p.CreatedAt);
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -74,6 +74,7 @@ public class PromotionsController(AppDbContext db) : ControllerBase
         p.ValidTo             = req.IsIndeterminate ? null : req.ValidTo;
         p.WeekDays            = req.WeekDays;
         p.ApplicableCategory  = req.ApplicableCategory;
+        p.ApplicableSize      = req.ApplicableSize;
         p.IsActive            = req.IsActive;
         return p;
     }

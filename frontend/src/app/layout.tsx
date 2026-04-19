@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -15,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${jetbrainsMono.variable} h-full`}>
+    <html lang="pt-BR" className={`${jetbrainsMono.variable} ${cormorant.variable} h-full`}>
       <body className="h-full bg-[var(--background)] text-[var(--foreground)] antialiased">
         {children}
       </body>

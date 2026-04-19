@@ -5,8 +5,8 @@ namespace backend.Services;
 
 public class DeliveryService(IConfiguration config, HttpClient httpClient)
 {
-    private readonly double _pizzariaLat = double.Parse(config["Delivery:PizzariaLat"] ?? "-23.5505");
-    private readonly double _pizzariaLng = double.Parse(config["Delivery:PizzariaLng"] ?? "-46.6333");
+    private readonly double _pizzariaLat = double.Parse(config["Delivery:PizzariaLat"] ?? "-19.5935");
+    private readonly double _pizzariaLng = double.Parse(config["Delivery:PizzariaLng"] ?? "-46.9408");
 
     public async Task<DeliveryEstimateResponse?> EstimateAsync(string zipCode)
     {

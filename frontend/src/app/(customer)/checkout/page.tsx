@@ -77,6 +77,12 @@ export default function CheckoutPage() {
   const deliveryFee = deliveryType === "Delivery" && address ? address.fee : 0;
   const total = subtotal + deliveryFee;
 
+  function handleZipChange(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+    setZipCode(formatted);
+  }
+
   async function handleCepSearch() {
     if (zipCode.replace(/\D/g, "").length !== 8) {
       setCepError("CEP deve ter 8 dígitos.");
@@ -86,6 +92,11 @@ export default function CheckoutPage() {
     setLoadingCep(true);
     try {
       const data = await api.post<AddressData>("/api/delivery/estimate", { zipCode });
+      if (data.city.toLowerCase() !== "araxá") {
+        setCepError("Desculpe, entregamos somente em Araxá/MG.");
+        setAddress(null);
+        return;
+      }
       setAddress(data);
     } catch {
       setCepError("CEP não encontrado.");
@@ -196,11 +207,12 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="CEP (somente números)"
+                    placeholder="00000-000"
                     value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
+                    onChange={(e) => handleZipChange(e.target.value)}
                     maxLength={9}
                     className="flex-1"
+                    inputMode="numeric"
                   />
                   <Button variant="secondary" onClick={handleCepSearch} disabled={loadingCep}>
                     {loadingCep ? "Buscando..." : "Buscar"}
