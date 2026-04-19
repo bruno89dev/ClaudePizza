@@ -32,6 +32,12 @@ const SIZES: { label: string; key: string; multiplier: number }[] = [
   { label: "Grande", key: "Grande", multiplier: 1.6 },
 ];
 
+function roundToNinety(value: number): number {
+  const floored = Math.floor(value);
+  const candidate = floored + 0.9;
+  return candidate >= value - 0.001 ? candidate : floored + 1.9;
+}
+
 const CRUSTS = ["Sem borda", "Catupiry", "Cheddar", "Chocolate"];
 
 const EXTRAS: { label: string; price: number }[] = [
@@ -78,9 +84,7 @@ export default function NewOrderPage() {
   }, 0);
 
   const unitPrice = selectedFlavor
-    ? parseFloat(
-        (selectedFlavor.basePrice * sizeMultiplier + extrasTotal).toFixed(2)
-      )
+    ? roundToNinety(selectedFlavor.basePrice * sizeMultiplier) + extrasTotal
     : 0;
 
   function handleAddToCart() {
@@ -144,15 +148,15 @@ export default function NewOrderPage() {
           {/* Step 2: Sabor */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <CardTitle>2. Sabor</CardTitle>
-                <div className="relative w-56">
+                <div className="relative w-52 shrink-0">
                   <Search
                     size={14}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]"
                   />
                   <Input
-                    placeholder="Buscar sabor..."
+                    placeholder="Buscar..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-8 h-8 text-xs"
@@ -160,35 +164,33 @@ export default function NewOrderPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+            <CardContent className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
               {filteredFlavors.map((flavor) => {
-                const price = flavor.basePrice * sizeMultiplier;
+                const price = roundToNinety(flavor.basePrice * sizeMultiplier);
                 return (
                   <button
                     key={flavor.id}
                     onClick={() => setSelectedFlavor(flavor)}
-                    className={`flex items-center justify-between p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
+                    className={`flex flex-col gap-1 p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
                       selectedFlavor?.id === flavor.id
                         ? "border-[var(--primary)] bg-[var(--primary)]/10"
                         : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]"
                     }`}
                   >
-                    <div>
-                      <p className="font-mono text-sm font-medium text-[var(--foreground)]">
-                        {flavor.name}
-                      </p>
-                      <p className="text-xs text-[var(--muted-foreground)]">
-                        {flavor.description}
-                      </p>
-                    </div>
-                    <span className="font-mono text-sm text-[var(--primary)] shrink-0 ml-3">
+                    <span className="font-mono text-sm font-medium text-[var(--foreground)]">
+                      {flavor.name}
+                    </span>
+                    <span className="text-xs text-[var(--muted-foreground)] line-clamp-1">
+                      {flavor.description}
+                    </span>
+                    <span className="font-mono text-sm text-[var(--primary)] mt-1">
                       R$ {price.toFixed(2).replace(".", ",")}
                     </span>
                   </button>
                 );
               })}
               {filteredFlavors.length === 0 && (
-                <p className="text-sm text-[var(--muted-foreground)]">
+                <p className="text-sm text-[var(--muted-foreground)] col-span-2">
                   Nenhum sabor encontrado.
                 </p>
               )}

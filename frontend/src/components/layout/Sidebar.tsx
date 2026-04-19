@@ -69,7 +69,7 @@ export function Sidebar() {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-[var(--radius-m)] text-sm font-sans transition-colors",
-                  pathname === item.href || pathname.startsWith(item.href + "/")
+                  pathname === item.href
                     ? "bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)] font-medium"
                     : "text-[var(--muted-foreground)] hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-foreground)]"
                 )}
