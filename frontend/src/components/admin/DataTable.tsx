@@ -9,7 +9,7 @@ export interface Column<T> {
   key: keyof T | string;
   label: string;
   render?: (row: T) => React.ReactNode;
-  className?: string; // e.g. "flex-1 min-w-0" or "w-28 shrink-0"
+  className?: string; // applied to <th> and <td>, e.g. "w-32" or "w-48"
 }
 
 interface DataTableProps<T> {
@@ -60,71 +60,85 @@ export function DataTable<T extends { id: number }>({
           />
         </div>
         <div className="flex-1" />
-        {onAdd && (
-          <Button size="sm" onClick={onAdd}>{addLabel}</Button>
-        )}
+        {onAdd && <Button size="sm" onClick={onAdd}>{addLabel}</Button>}
       </div>
 
-      {/* Scrollable table area */}
-      <div className="overflow-x-auto">
-      {/* Header */}
-      <div className="flex items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[500px]">
-        {columns.map((col) => (
-          <div key={String(col.key)} className={`${col.className ?? "flex-1"} text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide truncate`}>
-            {col.label}
-          </div>
-        ))}
-        {(onEdit || onDelete) && (
-          <div className="w-24 text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide text-right">
-            Ações
-          </div>
-        )}
-      </div>
-
-      {/* Rows */}
-      <div className="flex-1 overflow-y-auto min-w-[500px]">
-        {paged.length === 0 && (
-          <div className="flex items-center justify-center h-20 text-sm text-[var(--muted-foreground)]">
-            Nenhum registro encontrado.
-          </div>
-        )}
-        {paged.map((row) => (
-          <div
-            key={row.id}
-            className="flex items-center h-13 px-5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/50 transition-colors"
-          >
-            {columns.map((col) => (
-              <div key={String(col.key)} className={`${col.className ?? "flex-1"} text-sm text-[var(--foreground)] truncate`}>
-                {col.render ? col.render(row) : String((row as Record<string, unknown>)[String(col.key)] ?? "")}
-              </div>
-            ))}
-            {(onEdit || onDelete) && (
-              <div className="w-24 flex items-center justify-end gap-3">
-                {onEdit && (
-                  <button
-                    onClick={() => onEdit(row)}
-                    title="Editar"
-                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={() => onDelete(row)}
-                    title="Excluir"
-                    className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                )}
-              </div>
+      {/* Table */}
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full border-collapse" style={{ minWidth: 500 }}>
+          <thead>
+            <tr className="bg-[var(--muted)] border-b border-[var(--border)] h-11">
+              {columns.map((col) => (
+                <th
+                  key={String(col.key)}
+                  className={`px-4 text-left text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide whitespace-nowrap ${col.className ?? ""}`}
+                >
+                  {col.label}
+                </th>
+              ))}
+              {(onEdit || onDelete) && (
+                <th className="px-4 text-right text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide w-20 whitespace-nowrap">
+                  Ações
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {paged.length === 0 && (
+              <tr>
+                <td
+                  colSpan={columns.length + (onEdit || onDelete ? 1 : 0)}
+                  className="text-center py-8 text-sm text-[var(--muted-foreground)]"
+                >
+                  Nenhum registro encontrado.
+                </td>
+              </tr>
             )}
-          </div>
-        ))}
+            {paged.map((row) => (
+              <tr
+                key={row.id}
+                className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/50 transition-colors"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={String(col.key)}
+                    className={`px-4 py-3 text-sm text-[var(--foreground)] ${col.className ?? ""}`}
+                  >
+                    {col.render
+                      ? col.render(row)
+                      : String((row as Record<string, unknown>)[String(col.key)] ?? "")}
+                  </td>
+                ))}
+                {(onEdit || onDelete) && (
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(row)}
+                          title="Editar"
+                          className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          onClick={() => onDelete(row)}
+                          title="Excluir"
+                          className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      </div>{/* end scroll wrapper */}
       {/* Footer / Pagination */}
       <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border)]">
         <span className="text-xs text-[var(--muted-foreground)] font-mono">
@@ -135,9 +149,7 @@ export function DataTable<T extends { id: number }>({
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors"
-          >
-            ‹
-          </button>
+          >‹</button>
           {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
@@ -147,17 +159,13 @@ export function DataTable<T extends { id: number }>({
                   ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
                   : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
               }`}
-            >
-              {p}
-            </button>
+            >{p}</button>
           ))}
           <button
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page === pages}
             className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors"
-          >
-            ›
-          </button>
+          >›</button>
         </div>
       </div>
     </div>

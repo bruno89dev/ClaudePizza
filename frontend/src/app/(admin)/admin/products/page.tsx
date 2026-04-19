@@ -23,18 +23,30 @@ const EMPTY: FormState = { name: "", description: "", price: 0, category: "", is
 const CATEGORIES = ["Bebidas", "Entradas", "Sobremesas", "Outros"];
 const DRINK_SIZES = ["Lata 350mL", "Latão 473mL", "600mL", "1L", "2L"];
 
+function formatBRL(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return "R$ " + (parseInt(digits, 10) / 100).toFixed(2).replace(".", ",");
+}
+function parseBRL(str: string): number {
+  const digits = str.replace(/\D/g, "");
+  return digits ? parseInt(digits, 10) / 100 : 0;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [modal, setModal] = useState<{ open: boolean; editing: Product | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [priceRaw, setPriceRaw] = useState("");
   const [saving, setSaving] = useState(false);
 
   function load() { api.get<Product[]>("/api/products").then(setProducts); }
   useEffect(() => { load(); }, []);
 
-  function openCreate() { setForm(EMPTY); setModal({ open: true, editing: null }); }
+  function openCreate() { setForm(EMPTY); setPriceRaw(""); setModal({ open: true, editing: null }); }
   function openEdit(p: Product) {
     setForm({ name: p.name, description: p.description, price: p.price, category: p.category, isAvailable: p.isAvailable });
+    setPriceRaw(formatBRL(String(Math.round(p.price * 100))));
     setModal({ open: true, editing: p });
   }
   async function handleDelete(p: Product) {
@@ -45,8 +57,9 @@ export default function AdminProductsPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      if (modal.editing) await api.put(`/api/products/${modal.editing.id}`, form);
-      else await api.post("/api/products", form);
+      const payload = { ...form, price: parseBRL(priceRaw) };
+      if (modal.editing) await api.put(`/api/products/${modal.editing.id}`, payload);
+      else await api.post("/api/products", payload);
       setModal({ open: false, editing: null });
       load();
     } finally { setSaving(false); }
@@ -99,7 +112,7 @@ export default function AdminProductsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-sm font-mono">Preço (R$)</label>
-                  <Input type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} />
+                  <Input inputMode="numeric" placeholder="R$ 0,00" value={priceRaw} onChange={(e) => setPriceRaw(formatBRL(e.target.value))} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-mono">Categoria</label>

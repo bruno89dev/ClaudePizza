@@ -25,7 +25,7 @@ public record CreateOrderRequest(
     string? PaymentMethod,
     decimal? ChangeFor);
 
-public record UpdateOrderStatusRequest(OrderStatus Status);
+public record UpdateOrderStatusRequest(OrderStatus Status, string? CancellationReason);
 
 public record RateOrderRequest(int Rating);
 
@@ -59,4 +59,5 @@ public record OrderResponse(
     DateTime? EstimatedDeliveryAt,
     string? PaymentMethod,
     decimal? ChangeFor,
-    int? Rating);
+    int? Rating,
+    string? CancellationReason);

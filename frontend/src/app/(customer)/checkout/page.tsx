@@ -346,7 +346,7 @@ export default function CheckoutPage() {
                   <span>Subtotal</span>
                   <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
                 </div>
-                {deliveryType === "Delivery" && (
+                {deliveryType === "Delivery" && address && (
                   <div className="flex justify-between text-sm text-[var(--muted-foreground)]">
                     <span>Taxa de entrega</span>
                     <span>R$ {deliveryFee.toFixed(2).replace(".", ",")}</span>

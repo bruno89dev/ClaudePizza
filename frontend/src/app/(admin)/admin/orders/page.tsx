@@ -2,11 +2,38 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChefHat, PackageCheck, XCircle, Search } from "lucide-react";
+import { CheckCircle, ChefHat, PackageCheck, Bike, ShoppingBag, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type OrderStatus = "Preparando" | "Pronto" | "Entregue" | "Cancelado";
+type OrderStatus =
+  | "AguardandoConfirmacao" | "Confirmado" | "EmPreparo"
+  | "Pronto" | "SaiuParaEntrega" | "AguardandoRetirada"
+  | "Entregue" | "Cancelado";
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  AguardandoConfirmacao: "Aguardando Confirmação",
+  Confirmado:            "Confirmado",
+  EmPreparo:             "Em Preparo",
+  Pronto:                "Pronto",
+  SaiuParaEntrega:       "Saiu p/ Entrega",
+  AguardandoRetirada:    "Ag. Retirada",
+  Entregue:              "Entregue",
+  Cancelado:             "Cancelado",
+};
+
+const STATUS_VARIANT: Record<OrderStatus, "default" | "warning" | "success" | "destructive" | "secondary"> = {
+  AguardandoConfirmacao: "secondary",
+  Confirmado:            "warning",
+  EmPreparo:             "default",
+  Pronto:                "warning",
+  SaiuParaEntrega:       "default",
+  AguardandoRetirada:    "default",
+  Entregue:              "success",
+  Cancelado:             "destructive",
+};
 
 interface OrderItem {
   id: number;
@@ -29,14 +56,7 @@ interface Order {
   rating: number | null;
 }
 
-const STATUS_VARIANT: Record<OrderStatus, "warning" | "success" | "secondary" | "destructive" | "default"> = {
-  Preparando: "warning",
-  Pronto:     "default",
-  Entregue:   "success",
-  Cancelado:  "destructive",
-};
-
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function TooltipWrapper({ text, children }: { text: string; children: React.ReactNode }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   return (
     <div
@@ -61,54 +81,107 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
   );
 }
 
-interface ActionButtonsProps {
+function ActionButtons({
+  order,
+  onUpdate,
+  onRequestCancel,
+  loading,
+}: {
   order: Order;
   onUpdate: (id: number, status: OrderStatus) => void;
+  onRequestCancel: (id: number) => void;
   loading: number | null;
-}
-
-function ActionButtons({ order, onUpdate, loading }: ActionButtonsProps) {
+}) {
   const busy = loading === order.id;
+
   if (order.status === "Entregue" || order.status === "Cancelado") {
     return <span className="text-xs text-[var(--muted-foreground)] font-mono">—</span>;
   }
-  return (
-    <div className="flex items-center gap-2">
-      {order.status === "Preparando" && (
-        <Tooltip text="Marcar como Pronto">
-          <button
-            disabled={busy}
-            onClick={() => onUpdate(order.id, "Pronto")}
-            className="p-1.5 rounded-[var(--radius-m)] bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/30 transition-colors disabled:opacity-40 cursor-pointer"
-          >
+
+  const cancelBtn = (
+    <TooltipWrapper text="Cancelar pedido">
+      <button
+        disabled={busy}
+        onClick={() => onRequestCancel(order.id)}
+        className="px-3 py-1.5 rounded-[var(--radius-m)] text-xs font-mono bg-[var(--destructive)]/15 text-[var(--destructive)] hover:bg-[var(--destructive)]/30 transition-colors disabled:opacity-40 cursor-pointer"
+      >
+        Cancelar
+      </button>
+    </TooltipWrapper>
+  );
+
+  if (order.status === "AguardandoConfirmacao") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <TooltipWrapper text="Confirmar pedido">
+          <button disabled={busy} onClick={() => onUpdate(order.id, "Confirmado")}
+            className="p-1.5 rounded-[var(--radius-m)] bg-[#0f2e1a] text-[#4ade80] hover:bg-[#163d24] transition-colors disabled:opacity-40 cursor-pointer">
+            <CheckCircle size={16} />
+          </button>
+        </TooltipWrapper>
+        {cancelBtn}
+      </div>
+    );
+  }
+
+  if (order.status === "Confirmado") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <TooltipWrapper text="Iniciar preparo">
+          <button disabled={busy} onClick={() => onUpdate(order.id, "EmPreparo")}
+            className="p-1.5 rounded-[var(--radius-m)] bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/30 transition-colors disabled:opacity-40 cursor-pointer">
             <ChefHat size={16} />
           </button>
-        </Tooltip>
-      )}
-      {order.status === "Pronto" && (
-        <Tooltip text="Marcar como Entregue">
+        </TooltipWrapper>
+        {cancelBtn}
+      </div>
+    );
+  }
+
+  if (order.status === "EmPreparo") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <TooltipWrapper text="Marcar como Pronto">
+          <button disabled={busy} onClick={() => onUpdate(order.id, "Pronto")}
+            className="p-1.5 rounded-[var(--radius-m)] bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/30 transition-colors disabled:opacity-40 cursor-pointer">
+            <CheckCircle size={16} />
+          </button>
+        </TooltipWrapper>
+        {cancelBtn}
+      </div>
+    );
+  }
+
+  if (order.status === "Pronto") {
+    const isDelivery = order.deliveryType === "Delivery";
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <TooltipWrapper text={isDelivery ? "Saiu para Entrega" : "Aguardando Retirada"}>
           <button
             disabled={busy}
-            onClick={() => onUpdate(order.id, "Entregue")}
-            className="p-1.5 rounded-[var(--radius-m)] bg-[#0f2e1a] text-[#4ade80] hover:bg-[#163d24] transition-colors disabled:opacity-40 cursor-pointer"
+            onClick={() => onUpdate(order.id, isDelivery ? "SaiuParaEntrega" : "AguardandoRetirada")}
+            className="p-1.5 rounded-[var(--radius-m)] bg-[var(--primary)]/15 text-[var(--primary)] hover:bg-[var(--primary)]/30 transition-colors disabled:opacity-40 cursor-pointer"
           >
-            <PackageCheck size={16} />
+            {isDelivery ? <Bike size={16} /> : <ShoppingBag size={16} />}
           </button>
-        </Tooltip>
-      )}
-      <Tooltip text="Cancelar pedido">
-        <button
-          disabled={busy}
-          onClick={() => {
-            if (confirm(`Cancelar pedido #${order.id}?`)) onUpdate(order.id, "Cancelado");
-          }}
-          className="p-1.5 rounded-[var(--radius-m)] bg-[var(--destructive)]/15 text-[var(--destructive)] hover:bg-[var(--destructive)]/30 transition-colors disabled:opacity-40 cursor-pointer"
-        >
-          <XCircle size={16} />
+        </TooltipWrapper>
+        {cancelBtn}
+      </div>
+    );
+  }
+
+  if (order.status === "SaiuParaEntrega" || order.status === "AguardandoRetirada") {
+    return (
+      <TooltipWrapper text="Marcar como Entregue">
+        <button disabled={busy} onClick={() => onUpdate(order.id, "Entregue")}
+          className="p-1.5 rounded-[var(--radius-m)] bg-[#0f2e1a] text-[#4ade80] hover:bg-[#163d24] transition-colors disabled:opacity-40 cursor-pointer">
+          <PackageCheck size={16} />
         </button>
-      </Tooltip>
-    </div>
-  );
+      </TooltipWrapper>
+    );
+  }
+
+  return null;
 }
 
 export default function AdminOrdersPage() {
@@ -117,6 +190,10 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 7;
+
+  const [cancelModal, setCancelModal] = useState<{ orderId: number } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   function load() {
     api.get<Order[]>("/api/orders").then(setOrders);
@@ -131,6 +208,26 @@ export default function AdminOrdersPage() {
       load();
     } finally {
       setLoading(null);
+    }
+  }
+
+  function handleRequestCancel(orderId: number) {
+    setCancelReason("");
+    setCancelModal({ orderId });
+  }
+
+  async function handleConfirmCancel() {
+    if (!cancelModal) return;
+    setCancelling(true);
+    try {
+      await api.patch(`/api/orders/${cancelModal.orderId}/status`, {
+        status: "Cancelado",
+        cancellationReason: cancelReason.trim() || null,
+      });
+      setCancelModal(null);
+      load();
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -151,6 +248,31 @@ export default function AdminOrdersPage() {
         <p className="text-sm text-[var(--muted-foreground)]">Atualize o status dos pedidos em tempo real</p>
       </div>
 
+      {/* Cancel modal */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader><CardTitle>Cancelar Pedido #{cancelModal.orderId}?</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Por favor, conte-nos o motivo do cancelamento"
+                rows={3}
+                className="w-full px-3 py-2 text-sm font-mono bg-[var(--background)] border border-[var(--border)] rounded-[var(--radius-m)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 resize-none"
+              />
+              <p className="text-xs text-[var(--muted-foreground)]">Observações</p>
+              <div className="flex gap-3 pt-1">
+                <Button variant="outline" className="flex-1" onClick={() => setCancelModal(null)}>Não</Button>
+                <Button variant="destructive" className="flex-1" onClick={handleConfirmCancel} disabled={cancelling}>
+                  {cancelling ? "Cancelando..." : "Sim, cancelar"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="flex flex-col flex-1 rounded-[var(--radius-m)] border border-[var(--border)] bg-[var(--card)] overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center gap-4 px-5 py-4 border-b border-[var(--border)]">
@@ -165,87 +287,95 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* Scrollable table */}
-        <div className="overflow-x-auto">
-        {/* Header */}
-        <div className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px_90px] items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[780px]">
-          {["#", "Cliente", "Tipo", "Status", "Total", "Data", "Ações", "Avaliação"].map((h) => (
-            <div key={h} className="text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">
-              {h}
-            </div>
-          ))}
+        {/* Table */}
+        <div className="overflow-x-auto flex-1">
+          <table className="w-full border-collapse" style={{ minWidth: 820 }}>
+            <thead>
+              <tr className="bg-[var(--muted)] border-b border-[var(--border)] h-11">
+                {[
+                  { label: "#", cls: "w-14" },
+                  { label: "Cliente", cls: "" },
+                  { label: "Tipo", cls: "w-24" },
+                  { label: "Status", cls: "w-44" },
+                  { label: "Total", cls: "w-28" },
+                  { label: "Data", cls: "w-32" },
+                  { label: "Ações", cls: "w-36" },
+                  { label: "Avaliação", cls: "w-24" },
+                ].map(({ label, cls }) => (
+                  <th key={label} className={`px-4 text-left text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide ${cls}`}>
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paged.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center py-8 text-sm text-[var(--muted-foreground)]">
+                    Nenhum pedido encontrado.
+                  </td>
+                </tr>
+              )}
+              {paged.map((order) => (
+                <tr key={order.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/40 transition-colors">
+                  <td className="px-4 py-3 font-mono text-sm text-[var(--muted-foreground)]">#{order.id}</td>
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-mono text-[var(--foreground)]">{order.userName}</p>
+                    {order.estimatedDeliveryAt && (
+                      <p className="text-[10px] text-[var(--muted-foreground)]">
+                        Prev. {new Date(order.estimatedDeliveryAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                      {order.deliveryType === "Delivery" ? "Entrega" : "Retirada"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_VARIANT[order.status]} className="text-xs whitespace-nowrap">
+                      {STATUS_LABEL[order.status]}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-sm">
+                    R$ {order.totalAmount.toFixed(2).replace(".", ",")}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-[var(--muted-foreground)] font-mono">
+                    {new Date(order.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ActionButtons
+                      order={order}
+                      onUpdate={handleUpdate}
+                      onRequestCancel={handleRequestCancel}
+                      loading={loading}
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-sm text-[var(--muted-foreground)]">
+                    {order.rating ? "⭐".repeat(order.rating) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {/* Rows */}
-        <div className="flex-1 overflow-y-auto min-w-[700px]">
-          {paged.length === 0 && (
-            <div className="flex items-center justify-center h-20 text-sm text-[var(--muted-foreground)]">
-              Nenhum pedido encontrado.
-            </div>
-          )}
-          {paged.map((order) => (
-            <div
-              key={order.id}
-              className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px_90px] items-center min-h-[52px] px-5 border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/40 transition-colors min-w-[780px]"
-            >
-              <span className="font-mono text-sm text-[var(--muted-foreground)]">#{order.id}</span>
-              <div>
-                <p className="text-sm font-mono text-[var(--foreground)]">{order.userName}</p>
-                {order.estimatedDeliveryAt && (
-                  <p className="text-[10px] text-[var(--muted-foreground)]">
-                    Prev. {new Date(order.estimatedDeliveryAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                )}
-              </div>
-              <Badge variant="secondary" className="w-fit text-xs">
-                {order.deliveryType === "Delivery" ? "Entrega" : "Retirada"}
-              </Badge>
-              <Badge variant={STATUS_VARIANT[order.status]} className="w-fit text-xs">{order.status}</Badge>
-              <span className="font-mono text-sm">
-                R$ {order.totalAmount.toFixed(2).replace(".", ",")}
-              </span>
-              <span className="text-xs text-[var(--muted-foreground)] font-mono">
-                {new Date(order.createdAt).toLocaleString("pt-BR", {
-                  day: "2-digit", month: "2-digit",
-                  hour: "2-digit", minute: "2-digit",
-                })}
-              </span>
-              <ActionButtons order={order} onUpdate={handleUpdate} loading={loading} />
-              <span className="font-mono text-sm text-[var(--muted-foreground)]">
-                {order.rating ? "⭐".repeat(order.rating) : "—"}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        </div>{/* end scroll */}
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border)]">
           <span className="text-xs text-[var(--muted-foreground)] font-mono">
             {filtered.length} pedido{filtered.length !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors"
-            >‹</button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+              className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors">‹</button>
             {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`px-2 py-1 text-xs font-mono rounded border transition-colors ${
-                  p === page
-                    ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
-                    : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
-                }`}
-              >{p}</button>
+              <button key={p} onClick={() => setPage(p)}
+                className={`px-2 py-1 text-xs font-mono rounded border transition-colors ${p === page ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10" : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"}`}>
+                {p}
+              </button>
             ))}
-            <button
-              onClick={() => setPage((p) => Math.min(pages, p + 1))}
-              disabled={page === pages}
-              className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors"
-            >›</button>
+            <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}
+              className="px-2 py-1 text-xs font-mono rounded border border-[var(--border)] text-[var(--muted-foreground)] disabled:opacity-40 hover:bg-[var(--muted)] transition-colors">›</button>
           </div>
         </div>
       </div>

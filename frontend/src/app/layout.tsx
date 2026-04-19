@@ -18,9 +18,20 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "Bella Roma Pizzaria",
-  description: "Sistema de pedidos — Bella Roma Pizzaria",
+  description: "O sabor da Itália em sua mesa. Peça já a sua pizza!",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍕</text></svg>",
+  },
+  openGraph: {
+    title: "Bella Roma Pizzaria",
+    description: "O sabor da Itália em sua mesa. Peça já a sua pizza!",
+    type: "website",
+    locale: "pt_BR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bella Roma Pizzaria",
+    description: "O sabor da Itália em sua mesa. Peça já a sua pizza!",
   },
 };
 

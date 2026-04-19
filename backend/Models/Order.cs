@@ -22,7 +22,8 @@ public class Order
     [Column(TypeName = "decimal(10,2)")]
     public decimal DeliveryFee { get; set; }
 
-    public OrderStatus Status { get; set; } = OrderStatus.Preparando;
+    public OrderStatus Status { get; set; } = OrderStatus.AguardandoConfirmacao;
+    public string? CancellationReason { get; set; }
 
     public string? PaymentMethod { get; set; }
 
@@ -48,8 +49,12 @@ public enum DeliveryType
 
 public enum OrderStatus
 {
-    Preparando,
-    Pronto,
-    Entregue,
-    Cancelado
+    AguardandoConfirmacao = 0,  // era Preparando — retrocompat
+    Pronto                = 1,  // mantido
+    Entregue              = 2,  // mantido
+    Cancelado             = 3,  // mantido
+    Confirmado            = 4,
+    EmPreparo             = 5,
+    SaiuParaEntrega       = 6,
+    AguardandoRetirada    = 7,
 }

@@ -106,6 +106,8 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
 
         order.Status    = req.Status;
         order.UpdatedAt = DateTime.UtcNow;
+        if (req.Status == OrderStatus.Cancelado)
+            order.CancellationReason = req.CancellationReason;
         await db.SaveChangesAsync();
 
         await mediator.Publish(new OrderStatusChangedEvent(order.Id, req.Status));
@@ -165,6 +167,7 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
         var sizeBreakdown = orders
             .SelectMany(o => o.Items)
             .Where(i => pizzaSizes.Contains(i.Size))
+            .Select(i => new { Size = i.Size == "Pequena" ? "Broto" : i.Size, i.Quantity })
             .GroupBy(i => i.Size)
             .Select(g => new SizeStat(g.Key, g.Sum(i => i.Quantity)))
             .ToList();
@@ -261,6 +264,7 @@ public class OrdersController(AppDbContext db, IMediator mediator) : ControllerB
             estimatedDeliveryAt,
             o.PaymentMethod,
             o.ChangeFor,
-            o.Rating);
+            o.Rating,
+            o.CancellationReason);
     }
 }

@@ -28,17 +28,36 @@ interface Order {
 }
 
 const STATUS_VARIANT: Record<string, "default" | "warning" | "success" | "destructive" | "secondary"> = {
-  Preparando: "warning",
-  Pronto:     "default",
-  Entregue:   "success",
-  Cancelado:  "destructive",
+  AguardandoConfirmacao: "secondary",
+  Confirmado:            "warning",
+  EmPreparo:             "default",
+  Pronto:                "warning",
+  SaiuParaEntrega:       "default",
+  AguardandoRetirada:    "default",
+  Entregue:              "success",
+  Cancelado:             "destructive",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  AguardandoConfirmacao: "Aguardando Confirmação",
+  Confirmado:            "Confirmado",
+  EmPreparo:             "Em Preparo",
+  Pronto:                "Pronto",
+  SaiuParaEntrega:       "Saiu para Entrega",
+  AguardandoRetirada:    "Aguardando Retirada",
+  Entregue:              "Entregue",
+  Cancelado:             "Cancelado",
 };
 
 const STATUS_TOAST_COLOR: Record<string, string> = {
-  Preparando: "bg-[var(--primary)]",
-  Pronto:     "bg-[#3B82F6]",
-  Entregue:   "bg-[#22C55E]",
-  Cancelado:  "bg-[var(--destructive)]",
+  AguardandoConfirmacao: "bg-[var(--muted)]",
+  Confirmado:            "bg-[#F59E0B]",
+  EmPreparo:             "bg-[#3B82F6]",
+  Pronto:                "bg-[var(--primary)]",
+  SaiuParaEntrega:       "bg-[#A855F7]",
+  AguardandoRetirada:    "bg-[var(--primary)]",
+  Entregue:              "bg-[#22C55E]",
+  Cancelado:             "bg-[var(--destructive)]",
 };
 
 function toISO(d: Date) { return d.toISOString().split("T")[0]; }
@@ -169,7 +188,9 @@ export default function OrderTrackingPage() {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, rating } : o)));
   }
 
-  const activeOrders = orders.filter((o) => o.status === "Preparando" || o.status === "Pronto");
+  const activeOrders = orders.filter((o) =>
+    !["Entregue", "Cancelado"].includes(o.status)
+  );
 
   // History with date filter
   const historyAll = orders.filter((o) => o.status === "Entregue" || o.status === "Cancelado");
@@ -261,7 +282,7 @@ export default function OrderTrackingPage() {
                 <span className="text-xs text-[var(--muted-foreground)]">
                   {new Date(order.createdAt).toLocaleString("pt-BR")}
                 </span>
-                <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>{order.status}</Badge>
+                <Badge variant={STATUS_VARIANT[order.status] ?? "secondary"}>{STATUS_LABEL[order.status] ?? order.status}</Badge>
               </div>
               {order.estimatedDeliveryAt && (
                 <p className="text-xs text-[var(--primary)] font-mono mt-1">

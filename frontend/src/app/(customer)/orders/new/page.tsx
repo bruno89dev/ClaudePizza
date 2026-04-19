@@ -323,7 +323,7 @@ export default function NewOrderPage() {
           flavorId: null,
           flavorName: product.name,
           productCategory: product.category,
-          size: "",
+          size: product.description || "",
           crust: null,
           extras: null,
           quantity: 1,

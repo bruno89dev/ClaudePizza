@@ -18,10 +18,21 @@ interface Flavor {
 
 const EMPTY: Omit<Flavor, "id"> = { name: "", description: "", basePrice: 0, isAvailable: true };
 
+function formatBRL(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return "R$ " + (parseInt(digits, 10) / 100).toFixed(2).replace(".", ",");
+}
+function parseBRL(str: string): number {
+  const digits = str.replace(/\D/g, "");
+  return digits ? parseInt(digits, 10) / 100 : 0;
+}
+
 export default function AdminFlavorsPage() {
   const [flavors, setFlavors] = useState<Flavor[]>([]);
   const [modal, setModal] = useState<{ open: boolean; editing: Flavor | null }>({ open: false, editing: null });
   const [form, setForm] = useState(EMPTY);
+  const [priceRaw, setPriceRaw] = useState("");
   const [saving, setSaving] = useState(false);
 
   function load() {
@@ -32,11 +43,13 @@ export default function AdminFlavorsPage() {
 
   function openCreate() {
     setForm(EMPTY);
+    setPriceRaw("");
     setModal({ open: true, editing: null });
   }
 
   function openEdit(flavor: Flavor) {
     setForm({ name: flavor.name, description: flavor.description, basePrice: flavor.basePrice, isAvailable: flavor.isAvailable });
+    setPriceRaw(formatBRL(String(Math.round(flavor.basePrice * 100))));
     setModal({ open: true, editing: flavor });
   }
 
@@ -49,10 +62,11 @@ export default function AdminFlavorsPage() {
   async function handleSave() {
     setSaving(true);
     try {
+      const payload = { ...form, basePrice: parseBRL(priceRaw) };
       if (modal.editing) {
-        await api.put(`/api/flavors/${modal.editing.id}`, form);
+        await api.put(`/api/flavors/${modal.editing.id}`, payload);
       } else {
-        await api.post("/api/flavors", form);
+        await api.post("/api/flavors", payload);
       }
       setModal({ open: false, editing: null });
       load();
@@ -119,12 +133,12 @@ export default function AdminFlavorsPage() {
                 <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-mono">Preço base (R$)</label>
+                <label className="text-sm font-mono">Preço base</label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  value={form.basePrice}
-                  onChange={(e) => setForm({ ...form, basePrice: parseFloat(e.target.value) || 0 })}
+                  inputMode="numeric"
+                  placeholder="R$ 0,00"
+                  value={priceRaw}
+                  onChange={(e) => setPriceRaw(formatBRL(e.target.value))}
                 />
               </div>
               <div className="flex items-center gap-2">
