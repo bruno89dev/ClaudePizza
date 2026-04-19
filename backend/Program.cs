@@ -178,11 +178,13 @@ using (var scope = app.Services.CreateScope())
     if (wrongCat.Any()) await db.SaveChangesAsync();
 }
 
+// CORS deve ser o primeiro middleware para que os headers sejam enviados
+// em TODAS as respostas, inclusive erros 4xx/5xx
+app.UseCors("Frontend");
+
 // Swagger available in all environments (portfolio project)
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ClaudePizza API v1"));
-
-app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
