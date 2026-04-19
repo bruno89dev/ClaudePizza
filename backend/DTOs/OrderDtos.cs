@@ -50,4 +50,5 @@ public record OrderResponse(
     OrderStatus Status,
     decimal TotalAmount,
     DateTime CreatedAt,
-    List<OrderItemResponse> Items);
+    List<OrderItemResponse> Items,
+    DateTime? EstimatedDeliveryAt);

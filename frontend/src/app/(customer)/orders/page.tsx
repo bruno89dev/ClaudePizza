@@ -21,6 +21,7 @@ interface Order {
   totalAmount: number;
   deliveryFee: number;
   createdAt: string;
+  estimatedDeliveryAt: string | null;
   items: OrderItem[];
 }
 
@@ -103,6 +104,15 @@ export default function OrderTrackingPage() {
                   {order.status}
                 </Badge>
               </div>
+              {order.estimatedDeliveryAt && (
+                <p className="text-xs text-[var(--primary)] font-mono mt-1">
+                  ⏱ Previsão de {order.deliveryType === "Delivery" ? "entrega" : "retirada"}:{" "}
+                  {new Date(order.estimatedDeliveryAt).toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               {order.items.map((item) => (
