@@ -34,6 +34,13 @@ const STATUS_VARIANT: Record<string, "default" | "warning" | "success" | "destru
   Cancelado:  "destructive",
 };
 
+const STATUS_TOAST_COLOR: Record<string, string> = {
+  Preparando: "bg-[var(--primary)]",
+  Pronto:     "bg-[#3B82F6]",
+  Entregue:   "bg-[#22C55E]",
+  Cancelado:  "bg-[var(--destructive)]",
+};
+
 function toISO(d: Date) { return d.toISOString().split("T")[0]; }
 
 function StarRatingModal({ order, onClose, onRated }: {
@@ -106,6 +113,7 @@ export default function OrderTrackingPage() {
   const [tab, setTab] = useState<"ativos" | "historico">("ativos");
   const [loading, setLoading] = useState(true);
   const [ratingOrder, setRatingOrder] = useState<Order | null>(null);
+  const [statusToast, setStatusToast] = useState<{ orderId: number; status: string } | null>(null);
 
   // History filter
   const defaultTo = new Date();
@@ -129,6 +137,8 @@ export default function OrderTrackingPage() {
       hub.on("OrderStatusChanged", ({ orderId, status }: { orderId: number; status: string }) => {
         if (!mounted) return;
         setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+        setStatusToast({ orderId, status });
+        setTimeout(() => setStatusToast(null), 4000);
       });
     });
     return () => { mounted = false; };
@@ -169,6 +179,13 @@ export default function OrderTrackingPage() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Toast de mudança de status */}
+      {statusToast && (
+        <div className={`fixed bottom-4 right-4 z-50 ${STATUS_TOAST_COLOR[statusToast.status] ?? "bg-[var(--card)]"} text-white px-4 py-3 rounded-[var(--radius-m)] shadow-lg font-mono text-sm animate-in slide-in-from-bottom-2`}>
+          Pedido #{statusToast.orderId} — {statusToast.status}
+        </div>
+      )}
+
       {ratingOrder && (
         <StarRatingModal
           order={ratingOrder}

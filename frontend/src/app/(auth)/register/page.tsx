@@ -14,7 +14,13 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +37,12 @@ export default function RegisterPage() {
       document.cookie = `role=${user.role}; path=/; max-age=${60 * 60 * 24 * 7}`;
       router.push("/orders/new");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar conta.");
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.toLowerCase().includes("already taken") || msg.toLowerCase().includes("já cadastrado")) {
+        showToast("E-mail já cadastrado!");
+      } else {
+        setError(msg || "Erro ao criar conta.");
+      }
     } finally {
       setLoading(false);
     }
@@ -39,6 +50,11 @@ export default function RegisterPage() {
 
   return (
     <div className="flex h-full min-h-screen">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-[var(--destructive)] text-white px-4 py-3 rounded-[var(--radius-m)] shadow-lg font-mono text-sm animate-in slide-in-from-top-2">
+          {toast}
+        </div>
+      )}
       {/* Left panel — hero */}
       <div
         className="hidden lg:flex flex-1 flex-col justify-end p-12 relative"

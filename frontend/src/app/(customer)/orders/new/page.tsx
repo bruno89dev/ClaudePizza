@@ -51,10 +51,11 @@ interface CartItem {
   unitPrice: number;
 }
 
-const SIZES: { label: string; key: string; multiplier: number }[] = [
-  { label: "Pequena", key: "Pequena", multiplier: 1 },
-  { label: "Média",   key: "Média",   multiplier: 1.3 },
-  { label: "Grande",  key: "Grande",  multiplier: 1.6 },
+const SIZES: { label: string; key: string; multiplier: number; slices: number }[] = [
+  { label: "Broto",   key: "Broto",   multiplier: 0.75, slices: 4  },
+  { label: "Média",   key: "Média",   multiplier: 1,    slices: 6  },
+  { label: "Grande",  key: "Grande",  multiplier: 1.4,  slices: 8  },
+  { label: "Família", key: "Família", multiplier: 1.8,  slices: 12 },
 ];
 
 const CRUSTS: { label: string; price: number }[] = [
@@ -101,6 +102,108 @@ function promoLabel(p: Promotion): string {
   return `${discount}${where} — ${p.name}`;
 }
 
+// ── Círculo SVG da pizza ──────────────────────────────────────────────────────
+
+function PizzaCircle({
+  mode,
+  flavor1,
+  flavor2,
+}: {
+  mode: "inteira" | "meio-a-meio";
+  flavor1: Flavor | null;
+  flavor2: Flavor | null;
+}) {
+  const cx = 80;
+  const cy = 80;
+  const rCrust = 78;
+  const rFill  = 62;
+
+  const shortName = (f: Flavor | null, fallback: string) => {
+    if (!f) return fallback;
+    const words = f.name.split(" ");
+    return words.length > 2 ? words.slice(0, 2).join(" ") : f.name;
+  };
+
+  if (mode === "inteira") {
+    return (
+      <svg width={160} height={160} viewBox="0 0 160 160" className="mx-auto">
+        <circle cx={cx} cy={cy} r={rCrust} fill="#c8860a" />
+        <circle cx={cx} cy={cy} r={rFill}  fill="#d4522a" />
+        <text
+          x={cx} y={cy + 5}
+          textAnchor="middle"
+          fill="white"
+          fontSize={flavor1 ? 11 : 16}
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          {flavor1 ? shortName(flavor1, "?") : "?"}
+        </text>
+      </svg>
+    );
+  }
+
+  // meio a meio — linha horizontal dividindo só o recheio
+  return (
+    <svg width={160} height={160} viewBox="0 0 160 160" className="mx-auto">
+      <defs>
+        <clipPath id="clip-top">
+          <rect x={0} y={0} width={160} height={80} />
+        </clipPath>
+        <clipPath id="clip-bottom">
+          <rect x={0} y={80} width={160} height={80} />
+        </clipPath>
+        <clipPath id="clip-inner">
+          <circle cx={cx} cy={cy} r={rFill} />
+        </clipPath>
+      </defs>
+
+      {/* Crust */}
+      <circle cx={cx} cy={cy} r={rCrust} fill="#c8860a" />
+
+      {/* Metade superior */}
+      <circle cx={cx} cy={cy} r={rFill} fill="#b03a20" clipPath="url(#clip-top)" />
+      {/* Metade inferior */}
+      <circle cx={cx} cy={cy} r={rFill} fill="#d4522a" clipPath="url(#clip-bottom)" />
+
+      {/* Linha divisória (só dentro do recheio) */}
+      <line
+        x1={cx - rFill} y1={80} x2={cx + rFill} y2={80}
+        stroke="#111" strokeWidth={2}
+        clipPath="url(#clip-inner)"
+      />
+
+      {/* Nome sabor 1 (topo) */}
+      <text
+        x={cx} y={55}
+        textAnchor="middle"
+        fill="white"
+        fontSize={flavor1 ? 10 : 14}
+        fontWeight="bold"
+        fontFamily="monospace"
+        clipPath="url(#clip-top)"
+      >
+        {flavor1 ? shortName(flavor1, "?") : "?"}
+      </text>
+
+      {/* Nome sabor 2 (baixo) */}
+      <text
+        x={cx} y={108}
+        textAnchor="middle"
+        fill="white"
+        fontSize={flavor2 ? 10 : 14}
+        fontWeight="bold"
+        fontFamily="monospace"
+        clipPath="url(#clip-bottom)"
+      >
+        {flavor2 ? shortName(flavor2, "?") : "?"}
+      </text>
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function NewOrderPage() {
   const router = useRouter();
   const customizeRef = useRef<HTMLDivElement>(null);
@@ -112,11 +215,16 @@ export default function NewOrderPage() {
   const [search,    setSearch]    = useState("");
   const [cart,      setCart]      = useState<CartItem[]>([]);
 
-  // Upsell modal state
+  // Upsell modal
   const [upsellModal, setUpsellModal] = useState(false);
 
+  // Pizza mode
+  const [pizzaMode, setPizzaMode] = useState<"inteira" | "meio-a-meio">("inteira");
+  const [halfStep,  setHalfStep]  = useState<1 | 2>(1);
+
   // Pizza customization
-  const [selectedFlavor, setSelectedFlavor] = useState<Flavor | null>(null);
+  const [selectedFlavor,  setSelectedFlavor]  = useState<Flavor | null>(null);
+  const [selectedFlavor2, setSelectedFlavor2] = useState<Flavor | null>(null);
   const [size,  setSize]  = useState("Média");
   const [crust, setCrust] = useState("Sem borda");
   const [extras, setExtras] = useState<string[]>([]);
@@ -131,12 +239,32 @@ export default function NewOrderPage() {
 
   const activePromos = promos.filter(isPromoActive);
 
-  function selectFlavor(flavor: Flavor) {
-    setSelectedFlavor(flavor);
-    setSize("Média");
-    setCrust("Sem borda");
+  function changePizzaMode(mode: "inteira" | "meio-a-meio") {
+    setPizzaMode(mode);
+    setSelectedFlavor(null);
+    setSelectedFlavor2(null);
+    setHalfStep(1);
     setExtras([]);
-    setTimeout(() => customizeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+    setCrust("Sem borda");
+  }
+
+  function selectFlavor(flavor: Flavor) {
+    if (pizzaMode === "inteira") {
+      setSelectedFlavor(flavor);
+      setSize("Média");
+      setCrust("Sem borda");
+      setExtras([]);
+      setTimeout(() => customizeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+      return;
+    }
+    // meio a meio
+    if (halfStep === 1) {
+      setSelectedFlavor(flavor);
+      setHalfStep(2);
+    } else {
+      setSelectedFlavor2(flavor);
+      setTimeout(() => customizeRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+    }
   }
 
   function toggleExtra(label: string) {
@@ -146,16 +274,31 @@ export default function NewOrderPage() {
   const sizeMultiplier = SIZES.find((s) => s.key === size)?.multiplier ?? 1;
   const extrasTotal    = extras.reduce((s, l) => s + (EXTRAS.find((e) => e.label === l)?.price ?? 0), 0);
   const crustPrice     = CRUSTS.find((c) => c.label === crust)?.price ?? 0;
-  const pizzaUnitPrice = selectedFlavor
-    ? roundToNinety(selectedFlavor.basePrice * sizeMultiplier) + extrasTotal + crustPrice
+
+  const basePrice = pizzaMode === "meio-a-meio"
+    ? Math.max(selectedFlavor?.basePrice ?? 0, selectedFlavor2?.basePrice ?? 0)
+    : (selectedFlavor?.basePrice ?? 0);
+
+  const pizzaUnitPrice = basePrice > 0
+    ? roundToNinety(basePrice * sizeMultiplier) + extrasTotal + crustPrice
     : 0;
+
+  const showCustomize = pizzaMode === "inteira"
+    ? selectedFlavor !== null
+    : selectedFlavor !== null && selectedFlavor2 !== null;
 
   function addPizzaToCart() {
     if (!selectedFlavor) return;
+    if (pizzaMode === "meio-a-meio" && !selectedFlavor2) return;
+
+    const flavorName = pizzaMode === "meio-a-meio"
+      ? `${selectedFlavor.name} / ${selectedFlavor2!.name}`
+      : selectedFlavor.name;
+
     saveCart([...cart, {
       type: "pizza",
       flavorId: selectedFlavor.id,
-      flavorName: selectedFlavor.name,
+      flavorName,
       size,
       crust: crust !== "Sem borda" ? crust : null,
       extras: extras.length ? JSON.stringify(extras) : null,
@@ -163,6 +306,8 @@ export default function NewOrderPage() {
       unitPrice: pizzaUnitPrice,
     }]);
     setSelectedFlavor(null);
+    setSelectedFlavor2(null);
+    setHalfStep(1);
     setExtras([]);
     setCrust("Sem borda");
   }
@@ -194,15 +339,14 @@ export default function NewOrderPage() {
     localStorage.setItem("cart", JSON.stringify(items));
   }
 
-  const subtotal    = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const subtotal        = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const filteredFlavors = flavors.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
-  const entradas    = products.filter((p) => p.category === "Entradas");
-  const bebidas     = [...products.filter((p) => p.category === "Bebidas")].sort((a, b) => b.price - a.price);
-  const hasEntrada  = cart.some((i) => i.type === "product" && i.productCategory === "Entradas");
-  const hasBebida   = cart.some((i) => i.type === "product" && i.productCategory === "Bebidas");
-
-  const hasPizza = cart.some((i) => i.type === "pizza");
-  const needsUpsell = hasPizza && (!hasEntrada || !hasBebida);
+  const entradas        = products.filter((p) => p.category === "Entradas");
+  const bebidas         = [...products.filter((p) => p.category === "Bebidas")].sort((a, b) => b.price - a.price);
+  const hasEntrada      = cart.some((i) => i.type === "product" && i.productCategory === "Entradas");
+  const hasBebida       = cart.some((i) => i.type === "product" && i.productCategory === "Bebidas");
+  const hasPizza        = cart.some((i) => i.type === "pizza");
+  const needsUpsell     = hasPizza && (!hasEntrada || !hasBebida);
 
   function handleGoToCheckout() {
     if (needsUpsell) {
@@ -236,6 +380,9 @@ export default function NewOrderPage() {
       </div>
     );
   }
+
+  // Indicador de qual metade está sendo selecionada
+  const halfLabel = halfStep === 1 ? "Escolha o sabor da metade superior" : "Agora escolha a metade inferior";
 
   return (
     <div className="flex flex-col h-full">
@@ -295,93 +442,133 @@ export default function NewOrderPage() {
               </div>
             </div>
 
+            {/* Seletor de modo */}
+            <div className="flex items-center gap-3 mb-3">
+              <select
+                value={pizzaMode}
+                onChange={(e) => changePizzaMode(e.target.value as "inteira" | "meio-a-meio")}
+                className="h-9 px-3 text-sm font-mono bg-[var(--background)] border border-[var(--border)] rounded-[var(--radius-m)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 cursor-pointer"
+              >
+                <option value="inteira">Inteira</option>
+                <option value="meio-a-meio">Meio a meio</option>
+              </select>
+              {pizzaMode === "meio-a-meio" && (
+                <p className="text-xs font-mono text-[var(--primary)]">{halfLabel}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-80 overflow-y-auto scrollbar-thin pr-1">
-              {filteredFlavors.map((flavor) => (
-                <button
-                  key={flavor.id}
-                  onClick={() => selectFlavor(flavor)}
-                  className={`flex flex-col gap-1 p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
-                    selectedFlavor?.id === flavor.id
-                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
-                      : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]"
-                  }`}
-                >
-                  <span className="font-mono text-sm font-medium text-[var(--foreground)]">{flavor.name}</span>
-                  <span className="text-xs text-[var(--muted-foreground)] line-clamp-1">{flavor.description}</span>
-                  <span className="font-mono text-sm text-[var(--primary)] mt-0.5">
-                    a partir de R$ {roundToNinety(flavor.basePrice).toFixed(2).replace(".", ",")}
-                  </span>
-                </button>
-              ))}
+              {filteredFlavors.map((flavor) => {
+                const isSelected1 = selectedFlavor?.id === flavor.id;
+                const isSelected2 = selectedFlavor2?.id === flavor.id;
+                const isSelected  = isSelected1 || isSelected2;
+                return (
+                  <button
+                    key={flavor.id}
+                    onClick={() => selectFlavor(flavor)}
+                    className={`flex flex-col gap-1 p-3 rounded-[var(--radius-m)] border text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
+                        : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    <span className="font-mono text-sm font-medium text-[var(--foreground)]">{flavor.name}</span>
+                    <span className="text-xs text-[var(--muted-foreground)] line-clamp-1">{flavor.description}</span>
+                    <span className="font-mono text-sm text-[var(--primary)] mt-0.5">
+                      a partir de R$ {roundToNinety(flavor.basePrice * 0.75).toFixed(2).replace(".", ",")}
+                    </span>
+                    {isSelected1 && pizzaMode === "meio-a-meio" && (
+                      <span className="text-[10px] font-mono text-[var(--primary)] font-semibold">▲ Superior</span>
+                    )}
+                    {isSelected2 && (
+                      <span className="text-[10px] font-mono text-[var(--primary)] font-semibold">▼ Inferior</span>
+                    )}
+                  </button>
+                );
+              })}
               {filteredFlavors.length === 0 && (
                 <p className="text-sm text-[var(--muted-foreground)] col-span-3">Nenhum sabor encontrado.</p>
               )}
             </div>
 
             {/* Painel de personalização */}
-            {selectedFlavor && (
+            {(selectedFlavor || (pizzaMode === "meio-a-meio" && selectedFlavor)) && (
               <div ref={customizeRef} className="mt-4 p-4 rounded-[var(--radius-m)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 space-y-4">
-                <p className="font-mono font-semibold text-[var(--foreground)]">{selectedFlavor.name}</p>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Tamanho</p>
-                  <div className="flex gap-2">
-                    {SIZES.map((s) => (
-                      <button key={s.key} onClick={() => setSize(s.key)}
-                        className={`flex-1 py-2 rounded-[var(--radius-m)] border font-mono text-xs font-medium transition-colors cursor-pointer ${
-                          size === s.key
-                            ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
-                            : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
-                        }`}
-                      >{s.label}</button>
-                    ))}
-                  </div>
+                {/* Círculo da pizza */}
+                <div className="flex flex-col items-center gap-2">
+                  <PizzaCircle mode={pizzaMode} flavor1={selectedFlavor} flavor2={selectedFlavor2} />
+                  {pizzaMode === "meio-a-meio" && !selectedFlavor2 && (
+                    <p className="text-xs text-[var(--muted-foreground)] font-mono">Escolha o sabor da metade inferior ↑</p>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Borda</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CRUSTS.map((c) => (
-                      <button key={c.label} onClick={() => setCrust(c.label)}
-                        className={`flex items-center justify-between gap-1 px-3 py-2 rounded-[var(--radius-m)] border font-mono text-xs transition-colors cursor-pointer ${
-                          crust === c.label
-                            ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
-                            : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
-                        }`}
-                      >
-                        <span>{c.label}</span>
-                        {c.price > 0 && <span className="opacity-70">+R$ {c.price.toFixed(2).replace(".", ",")}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {showCustomize && (
+                  <>
+                    <div className="space-y-2">
+                      <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Tamanho</p>
+                      <div className="flex gap-2">
+                        {SIZES.map((s) => (
+                          <button key={s.key} onClick={() => setSize(s.key)}
+                            className={`flex-1 py-2 rounded-[var(--radius-m)] border font-mono text-xs font-medium transition-colors cursor-pointer flex flex-col items-center ${
+                              size === s.key
+                                ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
+                                : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            <span>{s.label}</span>
+                            <span className="text-[10px] opacity-70 font-normal">{s.slices} fatias</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Extras</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {EXTRAS.map((extra) => {
-                      const checked = extras.includes(extra.label);
-                      return (
-                        <label key={extra.label}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-[var(--radius-m)] border text-xs transition-colors cursor-pointer ${
-                            checked ? "border-[var(--primary)] bg-[var(--primary)]/10" : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
-                          }`}
-                        >
-                          <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.label)} className="w-3.5 h-3.5 accent-[var(--primary)] shrink-0" />
-                          <span className={`flex-1 font-mono ${checked ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`}>{extra.label}</span>
-                          <span className="text-[var(--muted-foreground)] opacity-70">+R$ {extra.price.toFixed(2).replace(".", ",")}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Borda</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CRUSTS.map((c) => (
+                          <button key={c.label} onClick={() => setCrust(c.label)}
+                            className={`flex items-center justify-between gap-1 px-3 py-2 rounded-[var(--radius-m)] border font-mono text-xs transition-colors cursor-pointer ${
+                              crust === c.label
+                                ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                                : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            <span>{c.label}</span>
+                            {c.price > 0 && <span className="opacity-70">+R$ {c.price.toFixed(2).replace(".", ",")}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-[var(--primary)]/20">
-                  <span className="font-mono font-bold text-[var(--primary)]">
-                    R$ {pizzaUnitPrice.toFixed(2).replace(".", ",")}
-                  </span>
-                  <Button onClick={addPizzaToCart} size="sm">Adicionar ao carrinho</Button>
-                </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-mono text-[var(--muted-foreground)] uppercase tracking-wider">Extras</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {EXTRAS.map((extra) => {
+                          const checked = extras.includes(extra.label);
+                          return (
+                            <label key={extra.label}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-[var(--radius-m)] border text-xs transition-colors cursor-pointer ${
+                                checked ? "border-[var(--primary)] bg-[var(--primary)]/10" : "border-[var(--border)] hover:border-[var(--muted-foreground)]"
+                              }`}
+                            >
+                              <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.label)} className="w-3.5 h-3.5 accent-[var(--primary)] shrink-0" />
+                              <span className={`flex-1 font-mono ${checked ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`}>{extra.label}</span>
+                              <span className="text-[var(--muted-foreground)] opacity-70">+R$ {extra.price.toFixed(2).replace(".", ",")}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[var(--primary)]/20">
+                      <span className="font-mono font-bold text-[var(--primary)]">
+                        R$ {pizzaUnitPrice.toFixed(2).replace(".", ",")}
+                      </span>
+                      <Button onClick={addPizzaToCart} size="sm">Adicionar ao carrinho</Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </section>
