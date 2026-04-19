@@ -98,13 +98,13 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center h-20 px-8 border-b border-[var(--border)]">
-        <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">Finalizar Pedido</h1>
+      <header className="flex items-center h-16 lg:h-20 px-4 lg:px-8 border-b border-[var(--border)]">
+        <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Finalizar Pedido</h1>
       </header>
 
-      <div className="flex flex-1 gap-6 p-8 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 gap-6 p-4 lg:p-8 overflow-y-auto lg:overflow-hidden">
         {/* Left column */}
-        <div className="flex-1 flex flex-col gap-6 overflow-y-auto">
+        <div className="flex-1 flex flex-col gap-6 lg:overflow-y-auto">
           {/* Tipo de entrega */}
           <Card>
             <CardHeader><CardTitle>Tipo de Entrega</CardTitle></CardHeader>
@@ -156,7 +156,7 @@ export default function CheckoutPage() {
                         </p>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Input placeholder="Número" value={number} onChange={(e) => setNumber(e.target.value)} />
                       <Input placeholder="Complemento" value={complement} onChange={(e) => setComplement(e.target.value)} />
                     </div>
@@ -168,7 +168,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Right column — order summary */}
-        <div className="w-96 shrink-0">
+        <div className="w-full lg:w-96 shrink-0">
           <Card className="sticky top-0">
             <CardHeader><CardTitle>Resumo do Pedido</CardTitle></CardHeader>
             <CardContent className="space-y-4">

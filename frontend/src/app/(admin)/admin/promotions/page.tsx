@@ -66,10 +66,10 @@ export default function AdminPromotionsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full p-8 gap-6">
+    <div className="flex flex-col h-full p-4 lg:p-8 gap-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">Promoções</h1>
+          <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Promoções</h1>
           <p className="text-sm text-[var(--muted-foreground)]">Gerencie promoções e descontos</p>
         </div>
       </div>

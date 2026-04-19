@@ -113,11 +113,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <header className="flex items-center gap-6 h-20 px-8 border-b border-[var(--border)] shrink-0">
-        <h1 className="font-mono font-bold text-2xl text-[var(--foreground)] flex-1">Dashboard</h1>
+      <header className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 lg:px-8 py-4 border-b border-[var(--border)] shrink-0">
+        <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)] flex-1">Dashboard</h1>
 
         {/* Date filter */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={from}
@@ -148,9 +148,9 @@ export default function DashboardPage() {
       )}
 
       {stats && (
-        <div className="p-8 space-y-6">
+        <div className="p-4 lg:p-8 space-y-6">
           {/* KPI row */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
               label="Pedidos"
               value={String(stats.totalOrders)}
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Line + Bar charts */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader><CardTitle>Faturamento por dia</CardTitle></CardHeader>
               <CardContent>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Donut row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader><CardTitle>Status dos pedidos</CardTitle></CardHeader>
               <CardContent className="flex flex-col items-center">

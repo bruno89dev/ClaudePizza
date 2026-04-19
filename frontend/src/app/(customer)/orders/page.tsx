@@ -66,8 +66,8 @@ export default function OrderTrackingPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center h-20 px-8 border-b border-[var(--border)]">
-        <h1 className="font-mono font-bold text-2xl text-[var(--foreground)] flex-1">Meus Pedidos</h1>
+      <header className="flex items-center h-16 lg:h-20 px-4 lg:px-8 border-b border-[var(--border)]">
+        <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)] flex-1">Meus Pedidos</h1>
         <div className="flex border border-[var(--border)] rounded-[var(--radius-m)] overflow-hidden">
           {(["ativos", "historico"] as const).map((t) => (
             <button
@@ -86,7 +86,7 @@ export default function OrderTrackingPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-4">
         {loading && <p className="text-[var(--muted-foreground)]">Carregando...</p>}
         {!loading && displayed.length === 0 && (
           <p className="text-[var(--muted-foreground)]">Nenhum pedido encontrado.</p>

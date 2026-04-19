@@ -129,9 +129,9 @@ export default function AdminOrdersPage() {
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="flex flex-col h-full p-8 gap-6">
+    <div className="flex flex-col h-full p-4 lg:p-8 gap-6">
       <div>
-        <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">Pedidos</h1>
+        <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Pedidos</h1>
         <p className="text-sm text-[var(--muted-foreground)]">Atualize o status dos pedidos em tempo real</p>
       </div>
 
@@ -149,8 +149,10 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
+        {/* Scrollable table */}
+        <div className="overflow-x-auto">
         {/* Header */}
-        <div className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px] items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)]">
+        <div className="grid grid-cols-[60px_1fr_100px_110px_110px_120px_100px] items-center h-11 px-5 bg-[var(--muted)] border-b border-[var(--border)] min-w-[700px]">
           {["#", "Cliente", "Tipo", "Status", "Total", "Data", "Ações"].map((h) => (
             <div key={h} className="text-xs font-mono font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">
               {h}
@@ -159,7 +161,7 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Rows */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-w-[700px]">
           {paged.length === 0 && (
             <div className="flex items-center justify-center h-20 text-sm text-[var(--muted-foreground)]">
               Nenhum pedido encontrado.
@@ -197,6 +199,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
+        </div>{/* end scroll */}
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border)]">
           <span className="text-xs text-[var(--muted-foreground)] font-mono">

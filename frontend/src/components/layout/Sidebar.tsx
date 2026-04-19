@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { UtensilsCrossed, ReceiptText, ShoppingCart, Settings, LogOut, Pizza, BarChart3, Tag, Package } from "lucide-react";
+import { UtensilsCrossed, ReceiptText, ShoppingCart, Settings, LogOut, Pizza, BarChart3, Tag, Package, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuth, getAuth } from "@/lib/auth";
 
@@ -27,7 +27,7 @@ const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: <BarChart3 size={18} /> },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = getAuth();
@@ -46,9 +46,14 @@ export function Sidebar() {
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 py-6 border-b border-[var(--sidebar-border)]">
         <Pizza size={28} className="text-[var(--primary)]" />
-        <span className="font-mono font-bold text-xl tracking-widest text-[var(--sidebar-foreground)]">
+        <span className="font-mono font-bold text-xl tracking-widest text-[var(--sidebar-foreground)] flex-1">
           BELLA ROMA
         </span>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {/* User */}
@@ -67,6 +72,7 @@ export function Sidebar() {
             <li key={item.href}>
               <Link
                 href={item.href}
+                onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-[var(--radius-m)] text-sm font-sans transition-colors",
                   pathname === item.href

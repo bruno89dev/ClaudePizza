@@ -81,11 +81,11 @@ export default function AdminFlavorsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full p-8 gap-6">
+    <div className="flex flex-col h-full p-4 lg:p-8 gap-6">
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-mono font-bold text-2xl text-[var(--foreground)]">Sabores</h1>
+          <h1 className="font-mono font-bold text-xl lg:text-2xl text-[var(--foreground)]">Sabores</h1>
           <p className="text-sm text-[var(--muted-foreground)]">Gerencie os sabores do cardápio</p>
         </div>
       </div>
